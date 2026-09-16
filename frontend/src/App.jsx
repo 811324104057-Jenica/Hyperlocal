@@ -1,13 +1,42 @@
 import { useState } from "react";
 import "./App.css";
 import { loginUser } from "./services/authService";
+import CustomerDashboard from "./pages/CustomerDashboard";
+import BookingPage from "./pages/BookingPage";
+import WorkerRecommendations from "./pages/WorkerRecommendations/WorkerRecommendations";
 
 function App() {
+  // -----------------------------
+  // STATE
+  // -----------------------------
   const [role, setRole] = useState("customer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loginMessage, setLoginMessage] = useState("");
 
+  // Current URL
+  const path = window.location.pathname;
+
+  // -----------------------------
+  // DASHBOARD ROUTE
+  // -----------------------------
+  if (path === "/dashboard") {
+    return <CustomerDashboard />;
+  }
+   if (path === "/recommendations") {
+  return <WorkerRecommendations />;
+  }
+  // -----------------------------
+  // BOOKING ROUTE
+  // -----------------------------
+  if (path === "/booking") {
+    return <BookingPage />;
+  }
+
+  // -----------------------------
+  // ROLES
+  // -----------------------------
   const roles = {
     customer: {
       title: "Customer",
@@ -15,12 +44,14 @@ function App() {
       icon: "👤",
       button: "Login as Customer",
     },
+
     provider: {
       title: "Service Provider",
       subtitle: "Manage your services and grow your business",
       icon: "🛠️",
       button: "Login as Provider",
     },
+
     admin: {
       title: "Admin",
       subtitle: "Manage the HyperLocal marketplace",
@@ -31,39 +62,64 @@ function App() {
 
   const currentRole = roles[role];
 
-  // LOGIN FUNCTION
+  // -----------------------------
+  // LOGIN
+  // -----------------------------
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Check empty fields
-    if (!email || !password) {
+    // Empty field validation
+    if (!email.trim() || !password.trim()) {
       alert("Please enter your email and password.");
       return;
     }
 
     try {
-      // Send login details to Spring Boot
+      // Call Spring Boot backend
       const data = await loginUser(email, password, role);
 
-      // Login successful
-      alert(`${currentRole.title} login successful!`);
-
-      // Store logged-in user
+      // Save logged-in user
       localStorage.setItem("user", JSON.stringify(data));
 
-      // Go to dashboard
-      window.location.href = "/dashboard";
+      // Save role
+      localStorage.setItem("role", role);
+
+      // Show success message
+      setLoginMessage(
+        `${currentRole.title} logged in successfully!`
+      );
+
+      // Redirect to dashboard
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1200);
 
     } catch (error) {
-      // Login failed
-      alert(error.message);
+      console.error("Login Error:", error);
+
+      alert(
+        error?.message ||
+        "Login failed. Please check your email and password."
+      );
     }
   };
 
+  // -----------------------------
+  // LOGIN PAGE
+  // -----------------------------
   return (
     <div className="page">
 
-      {/* Background */}
+      {/* SUCCESS MESSAGE */}
+      {loginMessage && (
+        <div className="login-success-message">
+          <span className="success-icon">✓</span>
+
+          <span>{loginMessage}</span>
+        </div>
+      )}
+
+      {/* BACKGROUND */}
       <div className="background-circle circle-one"></div>
       <div className="background-circle circle-two"></div>
 
@@ -85,11 +141,22 @@ function App() {
 
         <div className="nav-links">
 
-          <a href="#">Home</a>
-          <a href="#">Services</a>
-          <a href="#">About</a>
+          <a href="/">
+            Home
+          </a>
 
-          <button className="nav-register">
+          <a href="#">
+            Services
+          </a>
+
+          <a href="#">
+            About
+          </a>
+
+          <button
+            type="button"
+            className="nav-register"
+          >
             Register
           </button>
 
@@ -104,18 +171,20 @@ function App() {
         <section className="intro">
 
           <div className="trust-badge">
-            <span>●</span> Trusted Local Services
+            <span>●</span>
+            Trusted Local Services
           </div>
 
           <h1>
-            Your neighborhood, <br />
+            Your neighborhood,
+            <br />
             <span>your services.</span>
           </h1>
 
           <p className="intro-text">
-            Discover reliable professionals around you. Book services,
-            manage appointments and connect with your local community —
-            all in one place.
+            Discover reliable professionals around you.
+            Book services, manage appointments and connect
+            with your local community — all in one place.
           </p>
 
           {/* FEATURES */}
@@ -128,10 +197,13 @@ function App() {
               </div>
 
               <div>
-                <h3>Verified Professionals</h3>
+                <h3>
+                  Verified Professionals
+                </h3>
 
                 <p>
-                  Connect with trusted and verified service providers.
+                  Connect with trusted and verified
+                  service providers.
                 </p>
               </div>
 
@@ -144,10 +216,13 @@ function App() {
               </div>
 
               <div>
-                <h3>Quick & Easy Booking</h3>
+                <h3>
+                  Quick & Easy Booking
+                </h3>
 
                 <p>
-                  Find and book the right service in just a few clicks.
+                  Find and book the right service
+                  in just a few clicks.
                 </p>
               </div>
 
@@ -160,10 +235,13 @@ function App() {
               </div>
 
               <div>
-                <h3>Ratings & Reviews</h3>
+                <h3>
+                  Ratings & Reviews
+                </h3>
 
                 <p>
-                  Choose the best professionals using customer reviews.
+                  Choose the best professionals
+                  using customer reviews.
                 </p>
               </div>
 
@@ -206,15 +284,15 @@ function App() {
                     ? "role active"
                     : "role"
                 }
-                onClick={() => setRole("customer")}
+                onClick={() =>
+                  setRole("customer")
+                }
               >
-
                 <span>👤</span>
 
                 <small>
                   Customer
                 </small>
-
               </button>
 
               {/* PROVIDER */}
@@ -225,15 +303,15 @@ function App() {
                     ? "role active"
                     : "role"
                 }
-                onClick={() => setRole("provider")}
+                onClick={() =>
+                  setRole("provider")
+                }
               >
-
                 <span>🛠️</span>
 
                 <small>
                   Provider
                 </small>
-
               </button>
 
               {/* ADMIN */}
@@ -244,15 +322,15 @@ function App() {
                     ? "role active"
                     : "role"
                 }
-                onClick={() => setRole("admin")}
+                onClick={() =>
+                  setRole("admin")
+                }
               >
-
                 <span>🛡️</span>
 
                 <small>
                   Admin
                 </small>
-
               </button>
 
             </div>
@@ -281,6 +359,7 @@ function App() {
                     onChange={(e) =>
                       setEmail(e.target.value)
                     }
+                    disabled={!!loginMessage}
                   />
 
                 </div>
@@ -320,20 +399,22 @@ function App() {
                     onChange={(e) =>
                       setPassword(e.target.value)
                     }
+                    disabled={!!loginMessage}
                   />
 
                   <button
                     type="button"
                     className="password-toggle"
                     onClick={() =>
-                      setShowPassword(!showPassword)
+                      setShowPassword(
+                        !showPassword
+                      )
                     }
+                    disabled={!!loginMessage}
                   >
-
                     {showPassword
                       ? "🙈"
                       : "👁"}
-
                   </button>
 
                 </div>
@@ -345,7 +426,10 @@ function App() {
 
                 <label>
 
-                  <input type="checkbox" />
+                  <input
+                    type="checkbox"
+                    disabled={!!loginMessage}
+                  />
 
                   <span>
                     Remember me
@@ -359,9 +443,12 @@ function App() {
               <button
                 type="submit"
                 className="login-button"
+                disabled={!!loginMessage}
               >
 
-                {currentRole.button}
+                {loginMessage
+                  ? "Logging in..."
+                  : currentRole.button}
 
                 <span>
                   →
