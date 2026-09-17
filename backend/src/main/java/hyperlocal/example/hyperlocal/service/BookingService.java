@@ -1,11 +1,12 @@
 package hyperlocal.example.hyperlocal.service;
 
-import hyperlocal.example.hyperlocal.model.Booking;
-import hyperlocal.example.hyperlocal.repository.BookingRepository;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import hyperlocal.example.hyperlocal.model.Booking;
+import hyperlocal.example.hyperlocal.repository.BookingRepository;
 
 @Service
 public class BookingService {
@@ -17,7 +18,6 @@ public class BookingService {
     }
 
     public Booking createBooking(Booking booking) {
-
         booking.setStatus("PENDING");
         booking.setCreatedAt(LocalDateTime.now());
 
@@ -25,15 +25,34 @@ public class BookingService {
     }
 
     public List<Booking> getCustomerBookings(Long customerId) {
-
         return bookingRepository.findByCustomerId(customerId);
     }
 
-    public Booking cancelBooking(Long bookingId) {
+    public List<Booking> getWorkerBookings(Long workerId) {
+        return bookingRepository.findByWorkerId(workerId);
+    }
 
+    public Booking acceptBooking(Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() ->
-                        new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setStatus("CONFIRMED");
+
+        return bookingRepository.save(booking);
+    }
+
+    public Booking rejectBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setStatus("REJECTED");
+
+        return bookingRepository.save(booking);
+    }
+
+    public Booking cancelBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         if ("CANCELLED".equalsIgnoreCase(booking.getStatus())) {
             throw new RuntimeException("Booking is already cancelled");
