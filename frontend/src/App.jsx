@@ -4,39 +4,33 @@ import { loginUser } from "./services/authService";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import BookingPage from "./pages/BookingPage";
 import WorkerRecommendations from "./pages/WorkerRecommendations/WorkerRecommendations";
+import ProviderDashboard from "./pages/ProviderDashboard/ProviderDashboard";
 
 function App() {
-  // -----------------------------
-  // STATE
-  // -----------------------------
   const [role, setRole] = useState("customer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loginMessage, setLoginMessage] = useState("");
 
-  // Current URL
   const path = window.location.pathname;
 
-  // -----------------------------
-  // DASHBOARD ROUTE
-  // -----------------------------
   if (path === "/dashboard") {
     return <CustomerDashboard />;
   }
-   if (path === "/recommendations") {
-  return <WorkerRecommendations />;
+
+  if (path === "/provider-dashboard") {
+    return <ProviderDashboard />;
   }
-  // -----------------------------
-  // BOOKING ROUTE
-  // -----------------------------
+
+  if (path === "/recommendations") {
+    return <WorkerRecommendations />;
+  }
+
   if (path === "/booking") {
     return <BookingPage />;
   }
 
-  // -----------------------------
-  // ROLES
-  // -----------------------------
   const roles = {
     customer: {
       title: "Customer",
@@ -62,36 +56,32 @@ function App() {
 
   const currentRole = roles[role];
 
-  // -----------------------------
-  // LOGIN
-  // -----------------------------
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Empty field validation
     if (!email.trim() || !password.trim()) {
       alert("Please enter your email and password.");
       return;
     }
 
     try {
-      // Call Spring Boot backend
       const data = await loginUser(email, password, role);
 
-      // Save logged-in user
       localStorage.setItem("user", JSON.stringify(data));
-
-      // Save role
       localStorage.setItem("role", role);
 
-      // Show success message
       setLoginMessage(
         `${currentRole.title} logged in successfully!`
       );
 
-      // Redirect to dashboard
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        if (role === "provider") {
+          window.location.href = "/provider-dashboard";
+        } else if (role === "customer") {
+          window.location.href = "/dashboard";
+        } else {
+          window.location.href = "/dashboard";
+        }
       }, 1200);
 
     } catch (error) {
@@ -104,26 +94,19 @@ function App() {
     }
   };
 
-  // -----------------------------
-  // LOGIN PAGE
-  // -----------------------------
   return (
     <div className="page">
 
-      {/* SUCCESS MESSAGE */}
       {loginMessage && (
         <div className="login-success-message">
           <span className="success-icon">✓</span>
-
           <span>{loginMessage}</span>
         </div>
       )}
 
-      {/* BACKGROUND */}
       <div className="background-circle circle-one"></div>
       <div className="background-circle circle-two"></div>
 
-      {/* NAVBAR */}
       <nav className="navbar">
 
         <div className="brand">
@@ -164,10 +147,8 @@ function App() {
 
       </nav>
 
-      {/* MAIN */}
       <main className="main-container">
 
-        {/* LEFT SIDE */}
         <section className="intro">
 
           <div className="trust-badge">
@@ -187,7 +168,6 @@ function App() {
             with your local community — all in one place.
           </p>
 
-          {/* FEATURES */}
           <div className="features">
 
             <div className="feature-card">
@@ -251,12 +231,10 @@ function App() {
 
         </section>
 
-        {/* LOGIN SIDE */}
         <section className="login-section">
 
           <div className="login-card">
 
-            {/* HEADER */}
             <div className="login-header">
 
               <div className="login-icon">
@@ -273,10 +251,8 @@ function App() {
 
             </div>
 
-            {/* ROLE SELECTOR */}
             <div className="role-selector">
 
-              {/* CUSTOMER */}
               <button
                 type="button"
                 className={
@@ -284,18 +260,12 @@ function App() {
                     ? "role active"
                     : "role"
                 }
-                onClick={() =>
-                  setRole("customer")
-                }
+                onClick={() => setRole("customer")}
               >
                 <span>👤</span>
-
-                <small>
-                  Customer
-                </small>
+                <small>Customer</small>
               </button>
 
-              {/* PROVIDER */}
               <button
                 type="button"
                 className={
@@ -303,18 +273,12 @@ function App() {
                     ? "role active"
                     : "role"
                 }
-                onClick={() =>
-                  setRole("provider")
-                }
+                onClick={() => setRole("provider")}
               >
                 <span>🛠️</span>
-
-                <small>
-                  Provider
-                </small>
+                <small>Provider</small>
               </button>
 
-              {/* ADMIN */}
               <button
                 type="button"
                 className={
@@ -322,23 +286,16 @@ function App() {
                     ? "role active"
                     : "role"
                 }
-                onClick={() =>
-                  setRole("admin")
-                }
+                onClick={() => setRole("admin")}
               >
                 <span>🛡️</span>
-
-                <small>
-                  Admin
-                </small>
+                <small>Admin</small>
               </button>
 
             </div>
 
-            {/* LOGIN FORM */}
             <form onSubmit={handleLogin}>
 
-              {/* EMAIL */}
               <div className="input-group">
 
                 <label htmlFor="email">
@@ -356,9 +313,7 @@ function App() {
                     type="email"
                     placeholder="you@example.com"
                     value={email}
-                    onChange={(e) =>
-                      setEmail(e.target.value)
-                    }
+                    onChange={(e) => setEmail(e.target.value)}
                     disabled={!!loginMessage}
                   />
 
@@ -366,7 +321,6 @@ function App() {
 
               </div>
 
-              {/* PASSWORD */}
               <div className="input-group">
 
                 <div className="password-title">
@@ -389,16 +343,10 @@ function App() {
 
                   <input
                     id="password"
-                    type={
-                      showPassword
-                        ? "text"
-                        : "password"
-                    }
+                    type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) =>
-                      setPassword(e.target.value)
-                    }
+                    onChange={(e) => setPassword(e.target.value)}
                     disabled={!!loginMessage}
                   />
 
@@ -406,22 +354,17 @@ function App() {
                     type="button"
                     className="password-toggle"
                     onClick={() =>
-                      setShowPassword(
-                        !showPassword
-                      )
+                      setShowPassword(!showPassword)
                     }
                     disabled={!!loginMessage}
                   >
-                    {showPassword
-                      ? "🙈"
-                      : "👁"}
+                    {showPassword ? "🙈" : "👁"}
                   </button>
 
                 </div>
 
               </div>
 
-              {/* REMEMBER */}
               <div className="remember">
 
                 <label>
@@ -439,7 +382,6 @@ function App() {
 
               </div>
 
-              {/* LOGIN BUTTON */}
               <button
                 type="submit"
                 className="login-button"
@@ -458,16 +400,10 @@ function App() {
 
             </form>
 
-            {/* DIVIDER */}
             <div className="divider">
-
-              <span>
-                OR
-              </span>
-
+              <span>OR</span>
             </div>
 
-            {/* GOOGLE */}
             <button
               type="button"
               className="google-button"
@@ -481,7 +417,6 @@ function App() {
 
             </button>
 
-            {/* REGISTER */}
             <div className="register-text">
 
               <span>
@@ -500,7 +435,6 @@ function App() {
 
       </main>
 
-      {/* FOOTER */}
       <footer>
 
         <span>
