@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import "./BookingPage.css";
 
 function BookingPage() {
@@ -10,8 +11,27 @@ function BookingPage() {
   const [time, setTime] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
+  const [selectedWorker, setSelectedWorker] = useState(null);
 
-  const handleBooking = (e) => {
+  const serviceIds = {
+    Plumbing: 1,
+    Electrical: 2,
+    Cleaning: 3,
+    Painting: 4,
+    Repair: 5,
+    Moving: 6,
+  };
+
+  useEffect(() => {
+    const savedWorker =
+      localStorage.getItem("selectedWorker");
+
+    if (savedWorker) {
+      setSelectedWorker(JSON.parse(savedWorker));
+    }
+  }, []);
+
+  const handleBooking = async (e) => {
     e.preventDefault();
 
     if (!service || !date || !time || !address) {
@@ -19,25 +39,58 @@ function BookingPage() {
       return;
     }
 
-    const booking = {
-      service,
-      date,
-      time,
-      address,
-      notes,
-      status: "Pending",
-    };
-
-    localStorage.setItem(
-      "booking",
-      JSON.stringify(booking)
+    const user = JSON.parse(
+      localStorage.getItem("user")
     );
 
-    localStorage.removeItem("selectedService");
+    if (!user || !user.id) {
+      alert("Please login as a customer first.");
+      return;
+    }
 
-    alert("Booking request submitted successfully!");
+    if (!selectedWorker || !selectedWorker.id) {
+      alert(
+        "Please select a service provider before booking."
+      );
+      return;
+    }
 
-    window.location.href = "/dashboard";
+    const booking = {
+      customerId: user.id,
+      workerId: selectedWorker.id,
+      serviceId: serviceIds[service],
+      bookingDate: date,
+      bookingTime: time,
+      address: address,
+      totalPrice: selectedWorker.price,
+    };
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/api/bookings",
+        booking
+      );
+
+      console.log("Booking created:", response.data);
+
+      localStorage.removeItem("selectedService");
+      localStorage.removeItem("selectedWorker");
+
+      alert(
+        "Booking request submitted successfully!"
+      );
+
+      window.location.href = "/dashboard";
+    } catch (error) {
+      console.error(
+        "Booking Error:",
+        error.response?.data || error
+      );
+
+      alert(
+        "Booking failed. Please make sure the backend is running."
+      );
+    }
   };
 
   return (
@@ -71,6 +124,27 @@ function BookingPage() {
               Schedule a trusted local professional
             </p>
           </div>
+
+          {selectedWorker && (
+            <div className="selected-worker">
+              <h3>Selected Professional</h3>
+
+              <p>
+                <strong>Name:</strong>{" "}
+                {selectedWorker.name}
+              </p>
+
+              <p>
+                <strong>Rating:</strong>{" "}
+                ⭐ {selectedWorker.rating}
+              </p>
+
+              <p>
+                <strong>Price:</strong>{" "}
+                ₹{selectedWorker.price}
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleBooking}>
 
@@ -113,6 +187,7 @@ function BookingPage() {
                 <option value="Moving">
                   🚚 Moving
                 </option>
+
               </select>
 
             </div>
