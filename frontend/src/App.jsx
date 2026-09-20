@@ -5,6 +5,7 @@ import CustomerDashboard from "./pages/CustomerDashboard";
 import BookingPage from "./pages/BookingPage";
 import WorkerRecommendations from "./pages/WorkerRecommendations/WorkerRecommendations";
 import ProviderDashboard from "./pages/ProviderDashboard/ProviderDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   const [role, setRole] = useState("customer");
@@ -21,6 +22,10 @@ function App() {
 
   if (path === "/provider-dashboard") {
     return <ProviderDashboard />;
+  }
+
+  if (path === "/admin-dashboard") {
+    return <AdminDashboard />;
   }
 
   if (path === "/recommendations") {
@@ -79,8 +84,8 @@ function App() {
           window.location.href = "/provider-dashboard";
         } else if (role === "customer") {
           window.location.href = "/dashboard";
-        } else {
-          window.location.href = "/dashboard";
+        } else if (role === "admin") {
+          window.location.href = "/admin-dashboard";
         }
       }, 1200);
 
