@@ -35,42 +35,49 @@ public class BookingController {
     @GetMapping("/customer/{customerId}")
     public List<Booking> getCustomerBookings(
             @PathVariable Long customerId) {
+
         return bookingService.getCustomerBookings(customerId);
     }
 
     @GetMapping("/customer-details/{customerId}")
     public User getCustomerDetails(
             @PathVariable Long customerId) {
+
         return bookingService.getCustomerDetails(customerId);
     }
 
     @GetMapping("/worker/{workerId}")
     public List<Booking> getWorkerBookings(
             @PathVariable Long workerId) {
+
         return bookingService.getWorkerBookings(workerId);
     }
 
     @GetMapping("/worker-details/{workerId}")
     public Worker getWorkerDetails(
             @PathVariable Long workerId) {
+
         return bookingService.getWorkerDetails(workerId);
     }
 
     @PutMapping("/{bookingId}/accept")
     public Booking acceptBooking(
             @PathVariable Long bookingId) {
+
         return bookingService.acceptBooking(bookingId);
     }
 
     @PutMapping("/{bookingId}/reject")
     public Booking rejectBooking(
             @PathVariable Long bookingId) {
+
         return bookingService.rejectBooking(bookingId);
     }
 
     @PutMapping("/{bookingId}/cancel")
     public Booking cancelBooking(
             @PathVariable Long bookingId) {
+
         return bookingService.cancelBooking(bookingId);
     }
 }
