@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "bookings")
@@ -29,6 +30,24 @@ public class Booking {
     private String status;
     private double totalPrice;
     private LocalDateTime createdAt;
+
+    /*
+     * Customer's current location.
+     * These values are sent by the frontend and
+     * used by the backend to calculate the price.
+     */
+    @Transient
+    private double customerLatitude;
+
+    @Transient
+    private double customerLongitude;
+
+    /*
+     * Runtime calculated distance.
+     * Not stored in database.
+     */
+    @Transient
+    private double calculatedDistance;
 
     public Booking() {
     }
@@ -73,6 +92,18 @@ public class Booking {
         return createdAt;
     }
 
+    public double getCustomerLatitude() {
+        return customerLatitude;
+    }
+
+    public double getCustomerLongitude() {
+        return customerLongitude;
+    }
+
+    public double getCalculatedDistance() {
+        return calculatedDistance;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -112,4 +143,17 @@ public class Booking {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
+    public void setCustomerLatitude(double customerLatitude) {
+        this.customerLatitude = customerLatitude;
+    }
+
+    public void setCustomerLongitude(double customerLongitude) {
+        this.customerLongitude = customerLongitude;
+    }
+
+    public void setCalculatedDistance(double calculatedDistance) {
+        this.calculatedDistance = calculatedDistance;
+    }
 }
+
