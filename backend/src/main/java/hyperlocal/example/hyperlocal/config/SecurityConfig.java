@@ -16,18 +16,51 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
 
         http
             .cors(cors -> {})
             .csrf(csrf -> csrf.disable())
+
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login").permitAll()
-                .requestMatchers("/api/workers/recommendations").permitAll()
-                .requestMatchers("/api/services/**").permitAll()
-                .requestMatchers("/api/bookings/**").permitAll()
-                .requestMatchers("/api/admin/**").permitAll()
-                .anyRequest().authenticated()
+
+                // Authentication and registration
+                .requestMatchers(
+                    "/api/auth/login",
+                    "/api/auth/register-customer",
+                    "/api/auth/register-provider",
+                    "/api/auth/register-admin"
+                ).permitAll()
+
+                // Worker APIs
+                .requestMatchers(
+                    "/api/workers/**"
+                ).permitAll()
+
+                // Service APIs
+                .requestMatchers(
+                    "/api/services/**"
+                ).permitAll()
+
+                // Booking APIs
+                .requestMatchers(
+                    "/api/bookings/**"
+                ).permitAll()
+
+                // Payment APIs
+                .requestMatchers(
+                    "/api/payments/**"
+                ).permitAll()
+
+                // Admin APIs
+                .requestMatchers(
+                    "/api/admin/**"
+                ).permitAll()
+
+                // Other requests
+                .anyRequest()
+                .authenticated()
             );
 
         return http.build();
@@ -36,29 +69,39 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration configuration =
+                new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-            "http://localhost:5173",
-            "http://localhost:5174"
-        ));
+        configuration.setAllowedOrigins(
+                List.of(
+                    "http://localhost:5173",
+                    "http://localhost:5174"
+                )
+        );
 
-        configuration.setAllowedMethods(List.of(
-            "GET",
-            "POST",
-            "PUT",
-            "DELETE",
-            "OPTIONS"
-        ));
+        configuration.setAllowedMethods(
+                List.of(
+                    "GET",
+                    "POST",
+                    "PUT",
+                    "DELETE",
+                    "OPTIONS"
+                )
+        );
 
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedHeaders(
+                List.of("*")
+        );
 
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
 
         return source;
     }
