@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "workers")
@@ -20,13 +21,21 @@ public class Worker {
 
     private double rating;
 
+    @Transient
     private double distance;
+
+    @Transient
+    private double calculatedPrice;
 
     private double price;
 
     private int experience;
 
     private int completedJobs;
+
+    private double latitude;
+
+    private double longitude;
 
     public Worker() {
     }
@@ -35,18 +44,20 @@ public class Worker {
             String name,
             String service,
             double rating,
-            double distance,
             double price,
             int experience,
-            int completedJobs) {
-
+            int completedJobs,
+            double latitude,
+            double longitude
+    ) {
         this.name = name;
         this.service = service;
         this.rating = rating;
-        this.distance = distance;
         this.price = price;
         this.experience = experience;
         this.completedJobs = completedJobs;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     public Long getId() {
@@ -69,6 +80,10 @@ public class Worker {
         return distance;
     }
 
+    public double getCalculatedPrice() {
+        return calculatedPrice;
+    }
+
     public double getPrice() {
         return price;
     }
@@ -79,6 +94,14 @@ public class Worker {
 
     public int getCompletedJobs() {
         return completedJobs;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
     }
 
     public void setId(Long id) {
@@ -101,6 +124,10 @@ public class Worker {
         this.distance = distance;
     }
 
+    public void setCalculatedPrice(double calculatedPrice) {
+        this.calculatedPrice = calculatedPrice;
+    }
+
     public void setPrice(double price) {
         this.price = price;
     }
@@ -111,5 +138,13 @@ public class Worker {
 
     public void setCompletedJobs(int completedJobs) {
         this.completedJobs = completedJobs;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
     }
 }
