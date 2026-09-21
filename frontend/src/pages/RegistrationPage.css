@@ -1,0 +1,674 @@
+/* ================================
+   HYPERLOCAL CUSTOMER REGISTRATION
+   ================================ */
+
+.customer-register-page {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 35px 6%;
+    box-sizing: border-box;
+
+    background:
+        radial-gradient(
+            circle at 5% 20%,
+            rgba(236, 72, 153, 0.16),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 95% 80%,
+            rgba(59, 130, 246, 0.16),
+            transparent 32%
+        ),
+        linear-gradient(
+            135deg,
+            #fff8fc 0%,
+            #f7f4ff 50%,
+            #eef8ff 100%
+        );
+
+    position: relative;
+    overflow: hidden;
+}
+
+/* Decorative circles */
+
+.customer-bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.customer-bg-circle.one {
+    width: 360px;
+    height: 360px;
+    left: -190px;
+    top: 80px;
+    background: rgba(236, 72, 153, 0.10);
+}
+
+.customer-bg-circle.two {
+    width: 300px;
+    height: 300px;
+    right: -140px;
+    bottom: -100px;
+    background: rgba(59, 130, 246, 0.10);
+}
+
+/* Main container */
+
+.customer-register-container {
+    width: min(1120px, 100%);
+    min-height: 650px;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    border-radius: 30px;
+    overflow: hidden;
+
+    background: rgba(255, 255, 255, 0.88);
+
+    border: 1px solid rgba(255, 255, 255, 0.9);
+
+    box-shadow:
+        0 30px 80px rgba(80, 60, 120, 0.16);
+
+    backdrop-filter: blur(18px);
+
+    position: relative;
+    z-index: 2;
+}
+
+/* ================================
+   LEFT SECTION
+   ================================ */
+
+.customer-register-left {
+    padding: 55px 55px 45px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255, 241, 249, 0.92),
+            rgba(243, 239, 255, 0.90)
+        );
+
+    position: relative;
+}
+
+/* Brand */
+
+.customer-brand {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-bottom: 45px;
+}
+
+.customer-brand-logo {
+    width: 52px;
+    height: 52px;
+
+    border-radius: 16px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: white;
+    font-size: 27px;
+    font-weight: 800;
+
+    background:
+        linear-gradient(
+            135deg,
+            #ec008c,
+            #8b2be2,
+            #159cff
+        );
+
+    box-shadow:
+        0 12px 25px rgba(124, 58, 237, 0.24);
+}
+
+.customer-brand-name {
+    margin: 0;
+
+    font-size: 21px;
+    font-weight: 800;
+
+    color: #111827;
+}
+
+.customer-brand-tagline {
+    margin-top: 3px;
+
+    font-size: 9px;
+    letter-spacing: 1.4px;
+
+    color: #7c3aed;
+    font-weight: 700;
+}
+
+/* Main heading */
+
+.customer-register-left h1 {
+    margin: 0;
+
+    max-width: 500px;
+
+    font-size: clamp(42px, 4.5vw, 62px);
+    line-height: 1.02;
+
+    letter-spacing: -2.8px;
+
+    color: #10101a;
+}
+
+.customer-gradient-text {
+    background:
+        linear-gradient(
+            90deg,
+            #ec008c,
+            #8b2be2,
+            #159cff
+        );
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Description */
+
+.customer-register-description {
+    max-width: 430px;
+
+    margin: 22px 0 32px;
+
+    color: #625b70;
+
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+/* Benefits */
+
+.customer-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.customer-benefit {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.customer-benefit-icon {
+    width: 45px;
+    height: 45px;
+
+    flex-shrink: 0;
+
+    border-radius: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: white;
+
+    font-size: 19px;
+
+    box-shadow:
+        0 8px 20px rgba(90, 60, 120, 0.10);
+
+    border: 1px solid #eee8f7;
+}
+
+.customer-benefit-text h3 {
+    margin: 0 0 3px;
+
+    font-size: 14px;
+    color: #25202f;
+}
+
+.customer-benefit-text p {
+    margin: 0;
+
+    font-size: 12px;
+    color: #817889;
+}
+
+/* Decorative service pills */
+
+.customer-service-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    margin-top: 30px;
+}
+
+.customer-service-pill {
+    padding: 8px 12px;
+
+    border-radius: 30px;
+
+    background: rgba(255, 255, 255, 0.8);
+
+    border: 1px solid #ece5f6;
+
+    color: #655b72;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* ================================
+   RIGHT FORM
+   ================================ */
+
+.customer-register-right {
+    padding: 50px 55px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    background: rgba(255, 255, 255, 0.96);
+}
+
+/* Form header */
+
+.customer-form-header {
+    margin-bottom: 28px;
+}
+
+.customer-form-icon {
+    width: 58px;
+    height: 58px;
+
+    border-radius: 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 27px;
+
+    color: #7c3aed;
+
+    background:
+        linear-gradient(
+            135deg,
+            #ffe3f4,
+            #e8e0ff
+        );
+
+    box-shadow:
+        0 10px 25px rgba(124, 58, 237, 0.12);
+
+    margin-bottom: 17px;
+}
+
+.customer-form-header h2 {
+    margin: 0;
+
+    font-size: 31px;
+    line-height: 1.1;
+
+    color: #10111a;
+}
+
+.customer-form-header p {
+    margin: 9px 0 0;
+
+    color: #777080;
+
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Error */
+
+.customer-registration-error {
+    color: #b42318;
+
+    background: #fff1f1;
+
+    border: 1px solid #fecaca;
+
+    border-radius: 11px;
+
+    padding: 11px 13px;
+
+    margin-bottom: 16px;
+
+    font-size: 13px;
+}
+
+/* Success */
+
+.customer-registration-success {
+    color: #166534;
+
+    background: #f0fdf4;
+
+    border: 1px solid #bbf7d0;
+
+    border-radius: 11px;
+
+    padding: 11px 13px;
+
+    margin-bottom: 16px;
+
+    font-size: 13px;
+}
+
+/* Form */
+
+.customer-registration-form {
+    display: flex;
+    flex-direction: column;
+    gap: 17px;
+}
+
+.customer-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.customer-input-group label {
+    font-size: 12px;
+    font-weight: 700;
+
+    color: #302a3a;
+}
+
+.customer-input-wrapper {
+    position: relative;
+}
+
+.customer-input-icon {
+    position: absolute;
+
+    left: 15px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    font-size: 15px;
+
+    color: #9990a7;
+
+    pointer-events: none;
+}
+
+.customer-input-group input {
+    width: 100%;
+    height: 50px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #ddd5e8;
+    border-radius: 12px;
+
+    outline: none;
+
+    background: #ffffff;
+
+    padding:
+        0 16px 0 44px;
+
+    font-size: 13px;
+
+    color: #24202d;
+
+    transition: 0.2s ease;
+}
+
+.customer-input-group input::placeholder {
+    color: #aaa3b0;
+}
+
+.customer-input-group input:focus {
+    border-color: #8b5cf6;
+
+    box-shadow:
+        0 0 0 4px rgba(139, 92, 246, 0.10);
+}
+
+/* Password */
+
+.customer-password-wrapper {
+    position: relative;
+}
+
+.customer-password-wrapper input {
+    padding-right: 45px;
+}
+
+.customer-password-toggle {
+    position: absolute;
+
+    right: 13px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    border: none;
+    background: transparent;
+
+    cursor: pointer;
+
+    font-size: 16px;
+
+    color: #81778d;
+}
+
+.customer-password-note {
+    font-size: 11px;
+    color: #968d9e;
+}
+
+/* Main button */
+
+.customer-create-button {
+    width: 100%;
+    height: 51px;
+
+    border: none;
+    border-radius: 12px;
+
+    margin-top: 4px;
+
+    color: white;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    background:
+        linear-gradient(
+            90deg,
+            #ec008c,
+            #8b2be2,
+            #159cff
+        );
+
+    box-shadow:
+        0 13px 28px rgba(124, 58, 237, 0.22);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.customer-create-button:hover {
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 17px 32px rgba(124, 58, 237, 0.28);
+}
+
+.customer-create-button:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Divider */
+
+.customer-divider {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    margin: 22px 0 17px;
+
+    color: #aaa2b0;
+
+    font-size: 11px;
+}
+
+.customer-divider::before,
+.customer-divider::after {
+    content: "";
+
+    flex: 1;
+
+    height: 1px;
+
+    background: #ebe6f0;
+}
+
+/* Back button */
+
+.customer-back-button {
+    width: 100%;
+    height: 46px;
+
+    border-radius: 11px;
+
+    border: 1px solid #ddd6e7;
+
+    background: white;
+
+    color: #665d70;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+}
+
+.customer-back-button:hover {
+    background: #faf8fc;
+
+    border-color: #c8bdd8;
+
+    color: #4f4659;
+}
+
+/* Provider link */
+
+.customer-provider-link {
+    text-align: center;
+
+    margin-top: 17px;
+
+    font-size: 11px;
+
+    color: #8b8292;
+}
+
+.customer-provider-link button {
+    border: none;
+
+    background: transparent;
+
+    color: #7c3aed;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    margin-left: 4px;
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+
+@media (max-width: 900px) {
+
+    .customer-register-page {
+        padding: 25px 18px;
+    }
+
+    .customer-register-container {
+        grid-template-columns: 1fr;
+
+        max-width: 600px;
+    }
+
+    .customer-register-left {
+        padding: 38px 35px;
+    }
+
+    .customer-register-right {
+        padding: 38px 35px;
+    }
+
+    .customer-register-left h1 {
+        font-size: 44px;
+    }
+
+}
+
+@media (max-width: 500px) {
+
+    .customer-register-page {
+        padding: 12px;
+    }
+
+    .customer-register-container {
+        border-radius: 20px;
+    }
+
+    .customer-register-left {
+        padding: 30px 22px;
+    }
+
+    .customer-register-right {
+        padding: 30px 22px;
+    }
+
+    .customer-register-left h1 {
+        font-size: 37px;
+        letter-spacing: -1.8px;
+    }
+
+    .customer-form-header h2 {
+        font-size: 26px;
+    }
+
+    .customer-benefits {
+        gap: 14px;
+    }
+
+}

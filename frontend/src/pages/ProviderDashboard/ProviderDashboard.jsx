@@ -126,6 +126,7 @@ function ProviderDashboard() {
 
     const logout = () => {
         localStorage.removeItem("user");
+        localStorage.removeItem("role");
         window.location.href = "/";
     };
 
@@ -145,7 +146,9 @@ function ProviderDashboard() {
         <div className="provider-dashboard">
 
             <header className="provider-header">
+
                 <div>
+
                     <h1>
                         Provider Dashboard
                     </h1>
@@ -153,27 +156,34 @@ function ProviderDashboard() {
                     <p>
                         Manage your service bookings
                     </p>
+
                 </div>
 
                 <button onClick={logout}>
                     Logout
                 </button>
+
             </header>
 
             <main className="provider-content">
 
                 <div className="welcome-section">
+
                     <h2>
-                        Welcome,{" "}
-                        {user?.name ||
-                            "Service Provider"}{" "}
-                        👋
+                        Welcome{" "}
+                        {user?.name || "Service Provider"} 👋
                     </h2>
+
+                    <p>
+                        <strong>Role:</strong>{" "}
+                        Service Provider
+                    </p>
 
                     <p>
                         Review and manage customer
                         booking requests.
                     </p>
+
                 </div>
 
                 <div className="booking-section">
@@ -183,6 +193,7 @@ function ProviderDashboard() {
                     </h2>
 
                     {bookings.length === 0 ? (
+
                         <div className="no-bookings">
 
                             <h3>
@@ -195,7 +206,9 @@ function ProviderDashboard() {
                             </p>
 
                         </div>
+
                     ) : (
+
                         <div className="booking-list">
 
                             {bookings.map(
@@ -212,20 +225,17 @@ function ProviderDashboard() {
                                         ];
 
                                     return (
+
                                         <div
                                             className="booking-card"
-                                            key={
-                                                booking.id
-                                            }
+                                            key={booking.id}
                                         >
 
                                             <div className="booking-info">
 
                                                 <h3>
                                                     Booking #
-                                                    {
-                                                        booking.id
-                                                    }
+                                                    {booking.id}
                                                 </h3>
 
                                                 <p>
@@ -242,9 +252,7 @@ function ProviderDashboard() {
                                                         <strong>
                                                             Email:
                                                         </strong>{" "}
-                                                        {
-                                                            customer.email
-                                                        }
+                                                        {customer.email}
                                                     </p>
                                                 )}
 
@@ -261,27 +269,21 @@ function ProviderDashboard() {
                                                     <strong>
                                                         Date:
                                                     </strong>{" "}
-                                                    {
-                                                        booking.bookingDate
-                                                    }
+                                                    {booking.bookingDate}
                                                 </p>
 
                                                 <p>
                                                     <strong>
                                                         Time:
                                                     </strong>{" "}
-                                                    {
-                                                        booking.bookingTime
-                                                    }
+                                                    {booking.bookingTime}
                                                 </p>
 
                                                 <p>
                                                     <strong>
                                                         Address:
                                                     </strong>{" "}
-                                                    {
-                                                        booking.address
-                                                    }
+                                                    {booking.address}
                                                 </p>
 
                                                 <p>
@@ -289,9 +291,7 @@ function ProviderDashboard() {
                                                         Price:
                                                     </strong>{" "}
                                                     ₹
-                                                    {
-                                                        booking.totalPrice
-                                                    }
+                                                    {booking.totalPrice}
                                                 </p>
 
                                                 <p>
@@ -302,16 +302,16 @@ function ProviderDashboard() {
                                                     <span
                                                         className={`status ${booking.status?.toLowerCase()}`}
                                                     >
-                                                        {
-                                                            booking.status
-                                                        }
+                                                        {booking.status}
                                                     </span>
+
                                                 </p>
 
                                             </div>
 
                                             {booking.status ===
                                                 "PENDING" && (
+
                                                 <div className="booking-actions">
 
                                                     <button
@@ -337,14 +337,17 @@ function ProviderDashboard() {
                                                     </button>
 
                                                 </div>
+
                                             )}
 
                                         </div>
+
                                     );
                                 }
                             )}
 
                         </div>
+
                     )}
 
                 </div>

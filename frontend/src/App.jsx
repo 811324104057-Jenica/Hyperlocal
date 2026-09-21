@@ -1,113 +1,175 @@
-import { useState } from "react";
-import "./App.css";
-import { loginUser } from "./services/authService";
-import CustomerDashboard from "./pages/CustomerDashboard";
-import BookingPage from "./pages/BookingPage";
-import WorkerRecommendations from "./pages/WorkerRecommendations/WorkerRecommendations";
-import ProviderDashboard from "./pages/ProviderDashboard/ProviderDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
+import React, { useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 
-function App() {
+import CustomerDashboard from "./pages/CustomerDashboard";
+import ProviderDashboard from "./pages/ProviderDashboard/ProviderDashboard";
+import ProviderJobRole from "./pages/ProviderJobRole";
+import ProviderRegistration from "./pages/ProviderRegistration";
+import AdminDashboard from "./pages/AdminDashboard";
+import WorkerRecommendations from "./pages/WorkerRecommendations/WorkerRecommendations";
+import BookingPage from "./pages/BookingPage";
+
+import "./App.css";
+
+/* =========================================================
+   LOGIN PAGE
+========================================================= */
+
+function LoginPage() {
+  const navigate = useNavigate();
+
   const [role, setRole] = useState("customer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loginMessage, setLoginMessage] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
 
-  const path = window.location.pathname;
-
-  if (path === "/dashboard") {
-    return <CustomerDashboard />;
-  }
-
-  if (path === "/provider-dashboard") {
-    return <ProviderDashboard />;
-  }
-
-  if (path === "/admin-dashboard") {
-    return <AdminDashboard />;
-  }
-
-  if (path === "/recommendations") {
-    return <WorkerRecommendations />;
-  }
-
-  if (path === "/booking") {
-    return <BookingPage />;
-  }
-
-  const roles = {
-    customer: {
-      title: "Customer",
-      subtitle: "Find and book trusted local services",
-      icon: "👤",
-      button: "Login as Customer",
-    },
-
-    provider: {
-      title: "Service Provider",
-      subtitle: "Manage your services and grow your business",
-      icon: "🛠️",
-      button: "Login as Provider",
-    },
-
-    admin: {
-      title: "Admin",
-      subtitle: "Manage the HyperLocal marketplace",
-      icon: "🛡️",
-      button: "Login as Admin",
-    },
-  };
-
-  const currentRole = roles[role];
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
-      alert("Please enter your email and password.");
+    setMessage("");
+    setError("");
+
+    if (!email || !password) {
+      setError("Please enter email and password.");
       return;
     }
 
     try {
-      const data = await loginUser(email, password, role);
+      setLoading(true);
 
-      localStorage.setItem("user", JSON.stringify(data));
-      localStorage.setItem("role", role);
-
-      setLoginMessage(
-        `${currentRole.title} logged in successfully!`
-      );
-
-      setTimeout(() => {
-        if (role === "provider") {
-          window.location.href = "/provider-dashboard";
-        } else if (role === "customer") {
-          window.location.href = "/dashboard";
-        } else if (role === "admin") {
-          window.location.href = "/admin-dashboard";
+      const response = await fetch(
+        "http://localhost:8080/api/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            role,
+          }),
         }
-      }, 1200);
-
-    } catch (error) {
-      console.error("Login Error:", error);
-
-      alert(
-        error?.message ||
-        "Login failed. Please check your email and password."
       );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(data)
+      );
+
+      localStorage.setItem(
+        "role",
+        data.role
+      );
+
+      if (rememberMe) {
+        localStorage.setItem(
+          "rememberMe",
+          "true"
+        );
+      } else {
+        localStorage.removeItem(
+          "rememberMe"
+        );
+      }
+
+      setMessage(
+        `Login successful. Welcome ${data.name}!`
+      );
+
+     setTimeout(async () => {
+  if (data.role === "customer") {
+    navigate("/dashboard");
+
+  } else if (data.role === "provider") {
+
+    // New provider without a worker record
+    if (!data.workerId) {
+      navigate("/provider-job-role");
+      return;
+    }
+
+    try {
+      // Check the provider's current database setup
+      const workerResponse = await fetch(
+        `http://localhost:8080/api/workers/${data.workerId}`
+      );
+
+      if (!workerResponse.ok) {
+        // If worker details cannot be found, complete setup
+        navigate("/provider-job-role");
+        return;
+      }
+
+      const worker = await workerResponse.json();
+
+      // New provider: setup is not completed
+      if (
+        !worker.service ||
+        worker.service.trim().toLowerCase() === "pending"
+      ) {
+        navigate("/provider-job-role");
+      } else {
+        // Existing provider: setup already completed
+        navigate("/provider-dashboard");
+      }
+
+    } catch (workerError) {
+      console.error(
+        "Unable to check provider setup:",
+        workerError
+      );
+
+      setError(
+        "Unable to check your provider profile. Please try again."
+      );
+    }
+
+  } else if (data.role === "admin") {
+    navigate("/admin-dashboard");
+  }
+}, 500);
+
+    } catch (err) {
+      console.error(err);
+
+      setError(
+        err.message ||
+        "Unable to connect to server."
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterClick = () => {
+    if (role === "provider") {
+      navigate("/provider-register");
+    } else {
+      navigate(`/register?role=${role}`);
     }
   };
 
   return (
     <div className="page">
-
-      {loginMessage && (
-        <div className="login-success-message">
-          <span className="success-icon">✓</span>
-          <span>{loginMessage}</span>
-        </div>
-      )}
 
       <div className="background-circle circle-one"></div>
       <div className="background-circle circle-two"></div>
@@ -122,28 +184,54 @@ function App() {
 
           <div>
             <h2>HyperLocal</h2>
-            <span>Services Marketplace</span>
+
+            <span>
+              LOCAL SERVICES. SIMPLIFIED.
+            </span>
           </div>
 
         </div>
 
         <div className="nav-links">
 
-          <a href="/">
+          <a
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/");
+            }}
+          >
             Home
           </a>
 
-          <a href="#">
+          <a
+            href="/recommendations"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/recommendations");
+            }}
+          >
             Services
           </a>
 
-          <a href="#">
+          <a
+            href="#about"
+            onClick={(e) => {
+              e.preventDefault();
+
+              document
+                .getElementById("about")
+                ?.scrollIntoView({
+                  behavior: "smooth",
+                });
+            }}
+          >
             About
           </a>
 
           <button
-            type="button"
             className="nav-register"
+            onClick={handleRegisterClick}
           >
             Register
           </button>
@@ -158,19 +246,21 @@ function App() {
 
           <div className="trust-badge">
             <span>●</span>
-            Trusted Local Services
+            TRUSTED LOCAL MARKETPLACE
           </div>
 
           <h1>
-            Your neighborhood,
+            Local services,
             <br />
-            <span>your services.</span>
+            <span>
+              right at your doorstep.
+            </span>
           </h1>
 
           <p className="intro-text">
-            Discover reliable professionals around you.
-            Book services, manage appointments and connect
-            with your local community — all in one place.
+            Find trusted professionals near you
+            for home services, repairs, cleaning,
+            electrical work and more.
           </p>
 
           <div className="features">
@@ -187,8 +277,8 @@ function App() {
                 </h3>
 
                 <p>
-                  Connect with trusted and verified
-                  service providers.
+                  Connect with trusted and
+                  verified local professionals.
                 </p>
               </div>
 
@@ -206,8 +296,8 @@ function App() {
                 </h3>
 
                 <p>
-                  Find and book the right service
-                  in just a few clicks.
+                  Find and book local services
+                  quickly and easily.
                 </p>
               </div>
 
@@ -225,8 +315,8 @@ function App() {
                 </h3>
 
                 <p>
-                  Choose the best professionals
-                  using customer reviews.
+                  Choose professionals using
+                  real customer feedback.
                 </p>
               </div>
 
@@ -243,15 +333,16 @@ function App() {
             <div className="login-header">
 
               <div className="login-icon">
-                {currentRole.icon}
+                H
               </div>
 
               <h2>
-                Welcome Back!
+                Welcome to HyperLocal
               </h2>
 
               <p>
-                {currentRole.subtitle}
+                Connect with trusted local
+                service professionals
               </p>
 
             </div>
@@ -265,7 +356,9 @@ function App() {
                     ? "role active"
                     : "role"
                 }
-                onClick={() => setRole("customer")}
+                onClick={() =>
+                  setRole("customer")
+                }
               >
                 <span>👤</span>
                 <small>Customer</small>
@@ -278,7 +371,9 @@ function App() {
                     ? "role active"
                     : "role"
                 }
-                onClick={() => setRole("provider")}
+                onClick={() =>
+                  setRole("provider")
+                }
               >
                 <span>🛠️</span>
                 <small>Provider</small>
@@ -291,9 +386,11 @@ function App() {
                     ? "role active"
                     : "role"
                 }
-                onClick={() => setRole("admin")}
+                onClick={() =>
+                  setRole("admin")
+                }
               >
-                <span>🛡️</span>
+                <span>⚙️</span>
                 <small>Admin</small>
               </button>
 
@@ -303,7 +400,7 @@ function App() {
 
               <div className="input-group">
 
-                <label htmlFor="email">
+                <label>
                   Email Address
                 </label>
 
@@ -314,12 +411,12 @@ function App() {
                   </span>
 
                   <input
-                    id="email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="Enter your email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={!!loginMessage}
+                    onChange={(e) =>
+                      setEmail(e.target.value)
+                    }
                   />
 
                 </div>
@@ -330,11 +427,11 @@ function App() {
 
                 <div className="password-title">
 
-                  <label htmlFor="password">
+                  <label>
                     Password
                   </label>
 
-                  <a href="#">
+                  <a href="/">
                     Forgot Password?
                   </a>
 
@@ -347,23 +444,32 @@ function App() {
                   </span>
 
                   <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
+                    type={
+                      showPassword
+                        ? "text"
+                        : "password"
+                    }
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={!!loginMessage}
+                    onChange={(e) =>
+                      setPassword(
+                        e.target.value
+                      )
+                    }
                   />
 
                   <button
                     type="button"
                     className="password-toggle"
                     onClick={() =>
-                      setShowPassword(!showPassword)
+                      setShowPassword(
+                        !showPassword
+                      )
                     }
-                    disabled={!!loginMessage}
                   >
-                    {showPassword ? "🙈" : "👁"}
+                    {showPassword
+                      ? "🙈"
+                      : "👁"}
                   </button>
 
                 </div>
@@ -376,63 +482,106 @@ function App() {
 
                   <input
                     type="checkbox"
-                    disabled={!!loginMessage}
+                    checked={rememberMe}
+                    onChange={(e) =>
+                      setRememberMe(
+                        e.target.checked
+                      )
+                    }
                   />
 
-                  <span>
-                    Remember me
-                  </span>
+                  Remember me
 
                 </label>
 
               </div>
 
+              {message && (
+                <div
+                  className="login-success-message"
+                  style={{
+                    position: "static",
+                    transform: "none",
+                    marginBottom: "15px",
+                  }}
+                >
+                  <span className="success-icon">
+                    ✓
+                  </span>
+
+                  {message}
+                </div>
+              )}
+
+              {error && (
+                <div
+                  style={{
+                    color: "#dc2626",
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    padding: "10px",
+                    borderRadius: "8px",
+                    marginBottom: "15px",
+                    fontSize: "13px",
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
                 className="login-button"
-                disabled={!!loginMessage}
+                disabled={loading}
               >
-
-                {loginMessage
+                {loading
                   ? "Logging in..."
-                  : currentRole.button}
-
-                <span>
-                  →
-                </span>
-
+                  : "Login"}
               </button>
 
-            </form>
+              <div className="divider">
+                <span>OR</span>
+              </div>
 
-            <div className="divider">
-              <span>OR</span>
-            </div>
+              <button
+                type="button"
+                className="google-button"
+              >
+                <span className="google">
+                  G
+                </span>
 
-            <button
-              type="button"
-              className="google-button"
-            >
+                Continue with Google
+              </button>
 
-              <span className="google">
-                G
-              </span>
+              <p className="register-text">
 
-              Continue with Google
-
-            </button>
-
-            <div className="register-text">
-
-              <span>
                 Don't have an account?
-              </span>
 
-              <a href="#">
-                Create Account
-              </a>
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    marginLeft: "5px",
+                    color: "#7c3aed",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                  }}
+                  onClick={handleRegisterClick}
+                >
+                  Register as{" "}
+                  {role === "customer"
+                    ? "a Customer"
+                    : role === "provider"
+                    ? "a Service Provider"
+                    : "an Admin"}
+                </button>
 
-            </div>
+              </p>
+
+            </form>
 
           </div>
 
@@ -440,24 +589,52 @@ function App() {
 
       </main>
 
+      <section
+        id="about"
+        style={{
+          padding: "60px 7%",
+          textAlign: "center",
+          background: "#ffffff",
+          position: "relative",
+          zIndex: 2,
+        }}
+      >
+
+        <h2>
+          About HyperLocal
+        </h2>
+
+        <p
+          style={{
+            maxWidth: "700px",
+            margin: "15px auto",
+            color: "#716b80",
+            lineHeight: "1.7",
+          }}
+        >
+          HyperLocal connects customers with
+          trusted local service professionals.
+          Customers can discover, compare and
+          book nearby professionals for their
+          everyday service needs.
+        </p>
+
+      </section>
+
       <footer>
 
-        <span>
+        <div>
           © 2026 HyperLocal Services Marketplace
-        </span>
+        </div>
 
         <div>
 
-          <a href="#">
+          <a href="/">
             Privacy
           </a>
 
-          <a href="#">
+          <a href="/">
             Terms
-          </a>
-
-          <a href="#">
-            Help
           </a>
 
         </div>
@@ -465,6 +642,617 @@ function App() {
       </footer>
 
     </div>
+  );
+}
+
+
+/* =========================================================
+   CUSTOMER / ADMIN REGISTRATION PAGE
+========================================================= */
+
+function RegistrationPage() {
+
+  const navigate = useNavigate();
+
+  const [searchParams] =
+    useSearchParams();
+
+  const selectedRole =
+    searchParams.get("role") === "admin"
+      ? "admin"
+      : "customer";
+
+  const isAdmin =
+    selectedRole === "admin";
+
+  const [formData, setFormData] =
+    useState({
+      name: "",
+      email: "",
+      password: "",
+    });
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [message, setMessage] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const handleChange = (e) => {
+
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+
+  };
+
+  const handleSubmit = async (e) => {
+
+    e.preventDefault();
+
+    setError("");
+    setMessage("");
+
+    if (
+      !formData.name.trim() ||
+      !formData.email.trim() ||
+      !formData.password
+    ) {
+
+      setError(
+        "Please fill in all required fields."
+      );
+
+      return;
+    }
+
+    if (formData.password.length < 6) {
+
+      setError(
+        "Password must contain at least 6 characters."
+      );
+
+      return;
+    }
+
+    try {
+
+      setLoading(true);
+
+      const endpoint =
+        isAdmin
+          ? "register-admin"
+          : "register-customer";
+
+      const response = await fetch(
+        `http://localhost:8080/api/auth/${endpoint}`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            name: formData.name.trim(),
+            email: formData.email.trim(),
+            password: formData.password,
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.message ||
+          "Registration failed."
+        );
+
+      }
+
+      setMessage(
+        data.message ||
+        "Account created successfully!"
+      );
+
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+      });
+
+    } catch (err) {
+
+      console.error(
+        "Registration error:",
+        err
+      );
+
+      setError(
+        err.message ||
+        "Unable to connect to server."
+      );
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+  return (
+
+    <div className="registration-modern-page">
+
+      {/* Background decoration */}
+
+      <div className="registration-glow glow-one"></div>
+
+      <div className="registration-glow glow-two"></div>
+
+      {/* Top brand */}
+
+      <div className="registration-topbar">
+
+        <button
+          type="button"
+          className="registration-brand"
+          onClick={() =>
+            navigate("/")
+          }
+        >
+
+          <span className="registration-brand-logo">
+            H
+          </span>
+
+          <span>
+            HyperLocal
+          </span>
+
+        </button>
+
+        <div className="registration-secure">
+          🔒 Secure Registration
+        </div>
+
+      </div>
+
+      {/* Main content */}
+
+      <main className="registration-modern-container">
+
+        {/* Left information section */}
+
+        <section className="registration-info">
+
+          <div className="registration-small-badge">
+            {isAdmin
+              ? "⚙ ADMIN ACCESS"
+              : "✨ JOIN HYPERLOCAL"}
+          </div>
+
+          <h1>
+
+            {isAdmin ? (
+              <>
+                Manage the
+                <span>
+                  HyperLocal
+                </span>
+                marketplace.
+              </>
+            ) : (
+              <>
+                Local services,
+                <span>
+                  made simple.
+                </span>
+              </>
+            )}
+
+          </h1>
+
+          <p>
+            {isAdmin
+              ? "Create your administrator account and manage the HyperLocal marketplace from one secure platform."
+              : "Create your HyperLocal customer account and discover trusted local professionals near you."}
+          </p>
+
+          <div className="registration-benefits">
+
+            <div className="registration-benefit">
+
+              <div className="benefit-icon">
+                📍
+              </div>
+
+              <div>
+                <strong>
+                  Discover Nearby Services
+                </strong>
+
+                <span>
+                  Find professionals around your location.
+                </span>
+              </div>
+
+            </div>
+
+            <div className="registration-benefit">
+
+              <div className="benefit-icon">
+                ⚡
+              </div>
+
+              <div>
+                <strong>
+                  Fast & Easy Booking
+                </strong>
+
+                <span>
+                  Book the service you need in just a few steps.
+                </span>
+              </div>
+
+            </div>
+
+            <div className="registration-benefit">
+
+              <div className="benefit-icon">
+                ⭐
+              </div>
+
+              <div>
+                <strong>
+                  Real Ratings & Reviews
+                </strong>
+
+                <span>
+                  Make decisions using genuine customer feedback.
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* Registration card */}
+
+        <section className="registration-modern-card">
+
+          <div className="registration-card-header">
+
+            <div className="registration-card-icon">
+              {isAdmin ? "⚙" : "👤"}
+            </div>
+
+            <div>
+
+              <h2>
+                {isAdmin
+                  ? "Create Admin Account"
+                  : "Create Customer Account"}
+              </h2>
+
+              <p>
+                {isAdmin
+                  ? "Register your HyperLocal administrator account."
+                  : "Create your account and start exploring local services."}
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* Error */}
+
+          {error && (
+            <div className="modern-registration-error">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Success */}
+
+          {message && (
+            <div className="modern-registration-success">
+              <span className="success-check">
+                ✓
+              </span>
+
+              <div>
+                <strong>
+                  Account created successfully!
+                </strong>
+
+                <span>
+                  {message}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <form
+            onSubmit={handleSubmit}
+            className="modern-registration-form"
+          >
+
+            {/* Name */}
+
+            <div className="modern-field">
+
+              <label>
+                Full Name
+              </label>
+
+              <div className="modern-input">
+
+                <span>
+                  👤
+                </span>
+
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Enter your full name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  disabled={loading}
+                />
+
+              </div>
+
+            </div>
+
+            {/* Email */}
+
+            <div className="modern-field">
+
+              <label>
+                Email Address
+              </label>
+
+              <div className="modern-input">
+
+                <span>
+                  ✉
+                </span>
+
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={loading}
+                />
+
+              </div>
+
+            </div>
+
+            {/* Password */}
+
+            <div className="modern-field">
+
+              <label>
+                Password
+              </label>
+
+              <div className="modern-input">
+
+                <span>
+                  🔒
+                </span>
+
+                <input
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
+                  name="password"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={loading}
+                />
+
+                <button
+                  type="button"
+                  className="modern-password-toggle"
+                  onClick={() =>
+                    setShowPassword(
+                      !showPassword
+                    )
+                  }
+                  disabled={loading}
+                >
+                  {showPassword
+                    ? "🙈"
+                    : "👁"}
+                </button>
+
+              </div>
+
+              <small>
+                Password must contain at least 6 characters.
+              </small>
+
+            </div>
+
+            {/* Terms */}
+
+            <div className="registration-terms">
+
+              <span className="terms-check">
+                ✓
+              </span>
+
+              <p>
+                By creating an account, you agree to
+                the HyperLocal terms and privacy policy.
+              </p>
+
+            </div>
+
+            {/* Submit */}
+
+            <button
+              type="submit"
+              className="modern-create-button"
+              disabled={loading}
+            >
+
+              {loading ? (
+                <>
+                  <span className="button-spinner"></span>
+                  Creating Account...
+                </>
+              ) : (
+                <>
+                  {isAdmin
+                    ? "Create Admin Account"
+                    : "Create Customer Account"}
+
+                  <span>
+                    →
+                  </span>
+                </>
+              )}
+
+            </button>
+
+          </form>
+
+          {/* Login */}
+
+          <div className="registration-login-link">
+
+            <span>
+              Already have an account?
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/")
+              }
+              disabled={loading}
+            >
+              Back to Login
+            </button>
+
+          </div>
+
+        </section>
+
+      </main>
+
+      {/* Footer */}
+
+      <footer className="modern-registration-footer">
+
+        <span>
+          © 2026 HyperLocal Services Marketplace
+        </span>
+
+        <span>
+          Secure • Local • Trusted
+        </span>
+
+      </footer>
+
+    </div>
+  );
+}
+
+
+/* =========================================================
+   APP ROUTES
+========================================================= */
+
+function App() {
+
+  return (
+
+    <BrowserRouter>
+
+      <Routes>
+
+        <Route
+          path="/"
+          element={<LoginPage />}
+        />
+
+        <Route
+          path="/register"
+          element={<RegistrationPage />}
+        />
+
+        <Route
+          path="/dashboard"
+          element={<CustomerDashboard />}
+        />
+
+        <Route
+          path="/provider-job-role"
+          element={<ProviderJobRole />}
+        />
+
+        <Route
+          path="/provider-dashboard"
+          element={
+            <ProviderDashboard />
+          }
+        />
+
+        <Route
+          path="/provider-register"
+          element={
+            <ProviderRegistration />
+          }
+        />
+
+        <Route
+          path="/recommendations"
+          element={
+            <WorkerRecommendations />
+          }
+        />
+
+        <Route
+          path="/booking"
+          element={<BookingPage />}
+        />
+
+        <Route
+          path="/admin-dashboard"
+          element={
+            <AdminDashboard />
+          }
+        />
+
+      </Routes>
+
+    </BrowserRouter>
+
   );
 }
 
