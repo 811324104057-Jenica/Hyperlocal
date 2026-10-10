@@ -3,6 +3,7 @@ import {
   BrowserRouter,
   Routes,
   Route,
+  Navigate,
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
@@ -11,6 +12,7 @@ import CustomerDashboard from "./pages/CustomerDashboard";
 import ProviderDashboard from "./pages/ProviderDashboard/ProviderDashboard";
 import ProviderJobRole from "./pages/ProviderJobRole";
 import ProviderRegistration from "./pages/ProviderRegistration";
+import CustomerRegistration from "./pages/CustomerRegistration";
 import AdminDashboard from "./pages/AdminDashboard";
 import WorkerRecommendations from "./pages/WorkerRecommendations/WorkerRecommendations";
 import BookingPage from "./pages/BookingPage";
@@ -29,18 +31,26 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const handleRegisterClick = () => {
+    if (role === "provider") {
+      navigate("/provider-register");
+    } else if (role === "customer") {
+      navigate("/customer-register");
+    } else {
+      navigate("/register?role=admin");
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
-
     setMessage("");
     setError("");
 
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       setError("Please enter email and password.");
       return;
     }
@@ -56,7 +66,7 @@ function LoginPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            email,
+            email: email.trim(),
             password,
             role,
           }),
@@ -66,134 +76,93 @@ function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        throw new Error(data.message || "Login failed.");
       }
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify(data)
-      );
-
-      localStorage.setItem(
-        "role",
-        data.role
-      );
+      localStorage.setItem("user", JSON.stringify(data));
+      localStorage.setItem("role", data.role);
 
       if (rememberMe) {
-        localStorage.setItem(
-          "rememberMe",
-          "true"
-        );
+        localStorage.setItem("rememberMe", "true");
       } else {
-        localStorage.removeItem(
-          "rememberMe"
-        );
+        localStorage.removeItem("rememberMe");
       }
 
-      setMessage(
-        `Login successful. Welcome ${data.name}!`
-      );
+      setMessage(`Login successful. Welcome ${data.name}!`);
 
-     setTimeout(async () => {
-  if (data.role === "customer") {
-    navigate("/dashboard");
-
-  } else if (data.role === "provider") {
-
-    // New provider without a worker record
-    if (!data.workerId) {
-      navigate("/provider-job-role");
-      return;
-    }
-
-    try {
-      // Check the provider's current database setup
-      const workerResponse = await fetch(
-        `http://localhost:8080/api/workers/${data.workerId}`
-      );
-
-      if (!workerResponse.ok) {
-        // If worker details cannot be found, complete setup
-        navigate("/provider-job-role");
+      if (data.role === "customer") {
+        navigate("/dashboard");
         return;
       }
 
-      const worker = await workerResponse.json();
+      if (data.role === "provider") {
+        if (!data.workerId) {
+          navigate("/provider-job-role");
+          return;
+        }
 
-      // New provider: setup is not completed
-      if (
-        !worker.service ||
-        worker.service.trim().toLowerCase() === "pending"
-      ) {
-        navigate("/provider-job-role");
-      } else {
-        // Existing provider: setup already completed
-        navigate("/provider-dashboard");
+        try {
+          const workerResponse = await fetch(
+            `http://localhost:8080/api/workers/${data.workerId}`
+          );
+
+          if (!workerResponse.ok) {
+            navigate("/provider-job-role");
+            return;
+          }
+
+          const worker = await workerResponse.json();
+
+          if (
+            !worker.service ||
+            worker.service.trim().toLowerCase() === "pending"
+          ) {
+            navigate("/provider-job-role");
+          } else {
+            navigate("/provider-dashboard");
+          }
+        } catch (workerError) {
+          console.error(
+            "Unable to check provider setup:",
+            workerError
+          );
+
+          setError(
+            "Unable to check your provider profile. Please try again."
+          );
+        }
+
+        return;
       }
 
-    } catch (workerError) {
-      console.error(
-        "Unable to check provider setup:",
-        workerError
-      );
-
-      setError(
-        "Unable to check your provider profile. Please try again."
-      );
-    }
-
-  } else if (data.role === "admin") {
-    navigate("/admin-dashboard");
-  }
-}, 500);
-
+      if (data.role === "admin") {
+        navigate("/admin-dashboard");
+      }
     } catch (err) {
-      console.error(err);
-
-      setError(
-        err.message ||
-        "Unable to connect to server."
-      );
-
+      console.error("Login error:", err);
+      setError(err.message || "Unable to connect to server.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegisterClick = () => {
-    if (role === "provider") {
-      navigate("/provider-register");
-    } else {
-      navigate(`/register?role=${role}`);
-    }
-  };
-
   return (
     <div className="page">
-
       <div className="background-circle circle-one"></div>
       <div className="background-circle circle-two"></div>
 
+      {/* NAVBAR */}
       <nav className="navbar">
-
         <div className="brand">
-
-          <div className="brand-logo">
-            H
-          </div>
+          <div className="brand-logo">H</div>
 
           <div>
             <h2>HyperLocal</h2>
-
-            <span>
-              LOCAL SERVICES. SIMPLIFIED.
-            </span>
+            <span>LOCAL SERVICES. SIMPLIFIED.</span>
           </div>
-
         </div>
 
         <div className="nav-links">
-
           <a
             href="/"
             onClick={(e) => {
@@ -218,32 +187,27 @@ function LoginPage() {
             href="#about"
             onClick={(e) => {
               e.preventDefault();
-
-              document
-                .getElementById("about")
-                ?.scrollIntoView({
-                  behavior: "smooth",
-                });
+              document.getElementById("about")?.scrollIntoView({
+                behavior: "smooth",
+              });
             }}
           >
             About
           </a>
 
           <button
+            type="button"
             className="nav-register"
             onClick={handleRegisterClick}
           >
             Register
           </button>
-
         </div>
-
       </nav>
 
+      {/* MAIN */}
       <main className="main-container">
-
         <section className="intro">
-
           <div className="trust-badge">
             <span>●</span>
             TRUSTED LOCAL MARKETPLACE
@@ -252,113 +216,62 @@ function LoginPage() {
           <h1>
             Local services,
             <br />
-            <span>
-              right at your doorstep.
-            </span>
+            <span>right at your doorstep.</span>
           </h1>
 
           <p className="intro-text">
-            Find trusted professionals near you
-            for home services, repairs, cleaning,
-            electrical work and more.
+            Find trusted professionals near you for home services,
+            repairs, cleaning, electrical work and more.
           </p>
 
           <div className="features">
-
             <div className="feature-card">
-
-              <div className="feature-icon">
-                ✓
-              </div>
-
+              <div className="feature-icon">✓</div>
               <div>
-                <h3>
-                  Verified Professionals
-                </h3>
-
+                <h3>Verified Professionals</h3>
                 <p>
-                  Connect with trusted and
-                  verified local professionals.
+                  Connect with trusted and verified local professionals.
                 </p>
               </div>
-
             </div>
 
             <div className="feature-card">
-
-              <div className="feature-icon">
-                ⚡
-              </div>
-
+              <div className="feature-icon">⚡</div>
               <div>
-                <h3>
-                  Quick & Easy Booking
-                </h3>
-
+                <h3>Quick &amp; Easy Booking</h3>
                 <p>
-                  Find and book local services
-                  quickly and easily.
+                  Find and book local services quickly and easily.
                 </p>
               </div>
-
             </div>
 
             <div className="feature-card">
-
-              <div className="feature-icon">
-                ★
-              </div>
-
+              <div className="feature-icon">★</div>
               <div>
-                <h3>
-                  Ratings & Reviews
-                </h3>
-
+                <h3>Ratings &amp; Reviews</h3>
                 <p>
-                  Choose professionals using
-                  real customer feedback.
+                  Choose professionals using real customer feedback.
                 </p>
               </div>
-
             </div>
-
           </div>
-
         </section>
 
+        {/* LOGIN FORM */}
         <section className="login-section">
-
           <div className="login-card">
-
             <div className="login-header">
-
-              <div className="login-icon">
-                H
-              </div>
-
-              <h2>
-                Welcome to HyperLocal
-              </h2>
-
-              <p>
-                Connect with trusted local
-                service professionals
-              </p>
-
+              <div className="login-icon">H</div>
+              <h2>Welcome to HyperLocal</h2>
+              <p>Connect with trusted local service professionals</p>
             </div>
 
+            {/* ROLE SELECTOR */}
             <div className="role-selector">
-
               <button
                 type="button"
-                className={
-                  role === "customer"
-                    ? "role active"
-                    : "role"
-                }
-                onClick={() =>
-                  setRole("customer")
-                }
+                className={role === "customer" ? "role active" : "role"}
+                onClick={() => setRole("customer")}
               >
                 <span>👤</span>
                 <small>Customer</small>
@@ -366,14 +279,8 @@ function LoginPage() {
 
               <button
                 type="button"
-                className={
-                  role === "provider"
-                    ? "role active"
-                    : "role"
-                }
-                onClick={() =>
-                  setRole("provider")
-                }
+                className={role === "provider" ? "role active" : "role"}
+                onClick={() => setRole("provider")}
               >
                 <span>🛠️</span>
                 <small>Provider</small>
@@ -381,119 +288,85 @@ function LoginPage() {
 
               <button
                 type="button"
-                className={
-                  role === "admin"
-                    ? "role active"
-                    : "role"
-                }
-                onClick={() =>
-                  setRole("admin")
-                }
+                className={role === "admin" ? "role active" : "role"}
+                onClick={() => setRole("admin")}
               >
                 <span>⚙️</span>
                 <small>Admin</small>
               </button>
-
             </div>
 
             <form onSubmit={handleLogin}>
-
               <div className="input-group">
-
-                <label>
-                  Email Address
-                </label>
+                <label>Email Address</label>
 
                 <div className="input-wrapper">
-
-                  <span className="input-icon">
-                    ✉
-                  </span>
+                  <span className="input-icon">✉</span>
 
                   <input
                     type="email"
                     placeholder="Enter your email"
                     value={email}
-                    onChange={(e) =>
-                      setEmail(e.target.value)
-                    }
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
                   />
-
                 </div>
-
               </div>
 
               <div className="input-group">
-
                 <div className="password-title">
+                  <label>Password</label>
 
-                  <label>
-                    Password
-                  </label>
-
-                  <a href="/">
+                  <a
+                    href="/"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setError(
+                        "Please contact support to reset your password."
+                      );
+                    }}
+                  >
                     Forgot Password?
                   </a>
-
                 </div>
 
                 <div className="input-wrapper">
-
-                  <span className="input-icon">
-                    🔒
-                  </span>
+                  <span className="input-icon">🔒</span>
 
                   <input
-                    type={
-                      showPassword
-                        ? "text"
-                        : "password"
-                    }
+                    type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) =>
-                      setPassword(
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
                   />
 
                   <button
                     type="button"
                     className="password-toggle"
                     onClick={() =>
-                      setShowPassword(
-                        !showPassword
-                      )
+                      setShowPassword((prev) => !prev)
+                    }
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
                     }
                   >
-                    {showPassword
-                      ? "🙈"
-                      : "👁"}
+                    {showPassword ? "🙈" : "👁"}
                   </button>
-
                 </div>
-
               </div>
 
               <div className="remember">
-
                 <label>
-
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) =>
-                      setRememberMe(
-                        e.target.checked
-                      )
+                      setRememberMe(e.target.checked)
                     }
                   />
-
                   Remember me
-
                 </label>
-
               </div>
 
               {message && (
@@ -505,10 +378,7 @@ function LoginPage() {
                     marginBottom: "15px",
                   }}
                 >
-                  <span className="success-icon">
-                    ✓
-                  </span>
-
+                  <span className="success-icon">✓</span>
                   {message}
                 </div>
               )}
@@ -534,28 +404,10 @@ function LoginPage() {
                 className="login-button"
                 disabled={loading}
               >
-                {loading
-                  ? "Logging in..."
-                  : "Login"}
-              </button>
-
-              <div className="divider">
-                <span>OR</span>
-              </div>
-
-              <button
-                type="button"
-                className="google-button"
-              >
-                <span className="google">
-                  G
-                </span>
-
-                Continue with Google
+                {loading ? "Logging in..." : "Login"}
               </button>
 
               <p className="register-text">
-
                 Don't have an account?
 
                 <button
@@ -578,17 +430,13 @@ function LoginPage() {
                     ? "a Service Provider"
                     : "an Admin"}
                 </button>
-
               </p>
-
             </form>
-
           </div>
-
         </section>
-
       </main>
 
+      {/* ABOUT */}
       <section
         id="about"
         style={{
@@ -599,10 +447,7 @@ function LoginPage() {
           zIndex: 2,
         }}
       >
-
-        <h2>
-          About HyperLocal
-        </h2>
+        <h2>About HyperLocal</h2>
 
         <p
           style={{
@@ -612,89 +457,58 @@ function LoginPage() {
             lineHeight: "1.7",
           }}
         >
-          HyperLocal connects customers with
-          trusted local service professionals.
-          Customers can discover, compare and
-          book nearby professionals for their
-          everyday service needs.
+          HyperLocal connects customers with trusted local service
+          professionals. Customers can discover, compare and book nearby
+          professionals for their everyday service needs.
         </p>
-
       </section>
 
+      {/* FOOTER */}
       <footer>
+        <div>© 2026 HyperLocal Services Marketplace</div>
 
         <div>
-          © 2026 HyperLocal Services Marketplace
+          <a href="/">Privacy</a>
+          <a href="/">Terms</a>
         </div>
-
-        <div>
-
-          <a href="/">
-            Privacy
-          </a>
-
-          <a href="/">
-            Terms
-          </a>
-
-        </div>
-
       </footer>
-
     </div>
   );
 }
 
-
 /* =========================================================
-   CUSTOMER / ADMIN REGISTRATION PAGE
+   ADMIN REGISTRATION
+   Old customer registration URLs redirect to the OTP page.
 ========================================================= */
 
 function RegistrationPage() {
-
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const [searchParams] =
-    useSearchParams();
+  const isAdmin = searchParams.get("role") === "admin";
 
-  const selectedRole =
-    searchParams.get("role") === "admin"
-      ? "admin"
-      : "customer";
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
-  const isAdmin =
-    selectedRole === "admin";
-
-  const [formData, setFormData] =
-    useState({
-      name: "",
-      email: "",
-      password: "",
-    });
-
-  const [showPassword, setShowPassword] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  const [message, setMessage] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
 
+    setError("");
+    setMessage("");
   };
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
 
     setError("");
@@ -705,42 +519,25 @@ function RegistrationPage() {
       !formData.email.trim() ||
       !formData.password
     ) {
-
-      setError(
-        "Please fill in all required fields."
-      );
-
+      setError("Please fill in all required fields.");
       return;
     }
 
     if (formData.password.length < 6) {
-
-      setError(
-        "Password must contain at least 6 characters."
-      );
-
+      setError("Password must contain at least 6 characters.");
       return;
     }
 
     try {
-
       setLoading(true);
 
-      const endpoint =
-        isAdmin
-          ? "register-admin"
-          : "register-customer";
-
       const response = await fetch(
-        `http://localhost:8080/api/auth/${endpoint}`,
+        "http://localhost:8080/api/auth/register-admin",
         {
           method: "POST",
-
           headers: {
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
           },
-
           body: JSON.stringify({
             name: formData.name.trim(),
             email: formData.email.trim(),
@@ -749,241 +546,118 @@ function RegistrationPage() {
         }
       );
 
-      const data =
-        await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
-
-        throw new Error(
-          data.message ||
-          "Registration failed."
-        );
-
+        throw new Error(data.message || "Registration failed.");
       }
 
-      setMessage(
-        data.message ||
-        "Account created successfully!"
-      );
+      setMessage(data.message || "Admin registration successful!");
 
       setFormData({
         name: "",
         email: "",
         password: "",
       });
-
     } catch (err) {
-
-      console.error(
-        "Registration error:",
-        err
-      );
-
-      setError(
-        err.message ||
-        "Unable to connect to server."
-      );
-
+      console.error("Admin registration error:", err);
+      setError(err.message || "Unable to connect to server.");
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
+  // Never show the old, non-OTP customer registration form.
+  if (!isAdmin) {
+    return <Navigate to="/customer-register" replace />;
+  }
+
   return (
-
     <div className="registration-modern-page">
-
-      {/* Background decoration */}
-
       <div className="registration-glow glow-one"></div>
-
       <div className="registration-glow glow-two"></div>
 
-      {/* Top brand */}
-
       <div className="registration-topbar">
-
         <button
           type="button"
           className="registration-brand"
-          onClick={() =>
-            navigate("/")
-          }
+          onClick={() => navigate("/")}
+          disabled={loading}
         >
-
-          <span className="registration-brand-logo">
-            H
-          </span>
-
-          <span>
-            HyperLocal
-          </span>
-
+          <span className="registration-brand-logo">H</span>
+          <span>HyperLocal</span>
         </button>
 
         <div className="registration-secure">
           🔒 Secure Registration
         </div>
-
       </div>
 
-      {/* Main content */}
-
       <main className="registration-modern-container">
-
-        {/* Left information section */}
-
         <section className="registration-info">
-
           <div className="registration-small-badge">
-            {isAdmin
-              ? "⚙ ADMIN ACCESS"
-              : "✨ JOIN HYPERLOCAL"}
+            ⚙ ADMIN ACCESS
           </div>
 
           <h1>
-
-            {isAdmin ? (
-              <>
-                Manage the
-                <span>
-                  HyperLocal
-                </span>
-                marketplace.
-              </>
-            ) : (
-              <>
-                Local services,
-                <span>
-                  made simple.
-                </span>
-              </>
-            )}
-
+            Manage the <span>HyperLocal</span> marketplace.
           </h1>
 
           <p>
-            {isAdmin
-              ? "Create your administrator account and manage the HyperLocal marketplace from one secure platform."
-              : "Create your HyperLocal customer account and discover trusted local professionals near you."}
+            Create your administrator account and manage the HyperLocal
+            marketplace from one secure platform.
           </p>
 
           <div className="registration-benefits">
-
             <div className="registration-benefit">
-
-              <div className="benefit-icon">
-                📍
-              </div>
-
+              <div className="benefit-icon">📍</div>
               <div>
-                <strong>
-                  Discover Nearby Services
-                </strong>
-
-                <span>
-                  Find professionals around your location.
-                </span>
+                <strong>Marketplace Management</strong>
+                <span>Manage services available on HyperLocal.</span>
               </div>
-
             </div>
 
             <div className="registration-benefit">
-
-              <div className="benefit-icon">
-                ⚡
-              </div>
-
+              <div className="benefit-icon">⚡</div>
               <div>
-                <strong>
-                  Fast & Easy Booking
-                </strong>
-
-                <span>
-                  Book the service you need in just a few steps.
-                </span>
+                <strong>Quick Administration</strong>
+                <span>Access your administration tools easily.</span>
               </div>
-
             </div>
 
             <div className="registration-benefit">
-
-              <div className="benefit-icon">
-                ⭐
-              </div>
-
+              <div className="benefit-icon">⭐</div>
               <div>
-                <strong>
-                  Real Ratings & Reviews
-                </strong>
-
-                <span>
-                  Make decisions using genuine customer feedback.
-                </span>
+                <strong>Trusted Marketplace</strong>
+                <span>Help maintain a reliable service experience.</span>
               </div>
-
             </div>
-
           </div>
-
         </section>
 
-        {/* Registration card */}
-
         <section className="registration-modern-card">
-
           <div className="registration-card-header">
-
-            <div className="registration-card-icon">
-              {isAdmin ? "⚙" : "👤"}
-            </div>
+            <div className="registration-card-icon">⚙</div>
 
             <div>
-
-              <h2>
-                {isAdmin
-                  ? "Create Admin Account"
-                  : "Create Customer Account"}
-              </h2>
-
-              <p>
-                {isAdmin
-                  ? "Register your HyperLocal administrator account."
-                  : "Create your account and start exploring local services."}
-              </p>
-
+              <h2>Create Admin Account</h2>
+              <p>Register your HyperLocal administrator account.</p>
             </div>
-
           </div>
 
-          {/* Error */}
-
           {error && (
-            <div className="modern-registration-error">
+            <div className="modern-registration-error" role="alert">
               <span>⚠️</span>
               <span>{error}</span>
             </div>
           )}
 
-          {/* Success */}
-
           {message && (
-            <div className="modern-registration-success">
-              <span className="success-check">
-                ✓
-              </span>
-
+            <div className="modern-registration-success" role="status">
+              <span className="success-check">✓</span>
               <div>
-                <strong>
-                  Account created successfully!
-                </strong>
-
-                <span>
-                  {message}
-                </span>
+                <strong>Registration successful</strong>
+                <span>{message}</span>
               </div>
             </div>
           )}
@@ -992,267 +666,161 @@ function RegistrationPage() {
             onSubmit={handleSubmit}
             className="modern-registration-form"
           >
-
-            {/* Name */}
-
             <div className="modern-field">
-
-              <label>
-                Full Name
-              </label>
+              <label htmlFor="admin-name">Full Name</label>
 
               <div className="modern-input">
-
-                <span>
-                  👤
-                </span>
-
+                <span>👤</span>
                 <input
+                  id="admin-name"
                   type="text"
                   name="name"
                   placeholder="Enter your full name"
                   value={formData.name}
                   onChange={handleChange}
                   disabled={loading}
+                  required
                 />
-
               </div>
-
             </div>
 
-            {/* Email */}
-
             <div className="modern-field">
-
-              <label>
-                Email Address
-              </label>
+              <label htmlFor="admin-email">Email Address</label>
 
               <div className="modern-input">
-
-                <span>
-                  ✉
-                </span>
-
+                <span>✉</span>
                 <input
+                  id="admin-email"
                   type="email"
                   name="email"
                   placeholder="you@example.com"
                   value={formData.email}
                   onChange={handleChange}
                   disabled={loading}
+                  required
                 />
-
               </div>
-
             </div>
 
-            {/* Password */}
-
             <div className="modern-field">
-
-              <label>
-                Password
-              </label>
+              <label htmlFor="admin-password">Password</label>
 
               <div className="modern-input">
-
-                <span>
-                  🔒
-                </span>
-
+                <span>🔒</span>
                 <input
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
+                  id="admin-password"
+                  type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Create a password"
                   value={formData.password}
                   onChange={handleChange}
                   disabled={loading}
+                  minLength={6}
+                  required
                 />
 
                 <button
                   type="button"
                   className="modern-password-toggle"
                   onClick={() =>
-                    setShowPassword(
-                      !showPassword
-                    )
+                    setShowPassword((prev) => !prev)
                   }
                   disabled={loading}
+                  aria-label={
+                    showPassword ? "Hide password" : "Show password"
+                  }
                 >
-                  {showPassword
-                    ? "🙈"
-                    : "👁"}
+                  {showPassword ? "🙈" : "👁"}
                 </button>
-
               </div>
 
               <small>
                 Password must contain at least 6 characters.
               </small>
-
             </div>
-
-            {/* Terms */}
 
             <div className="registration-terms">
-
-              <span className="terms-check">
-                ✓
-              </span>
-
+              <span className="terms-check">✓</span>
               <p>
-                By creating an account, you agree to
-                the HyperLocal terms and privacy policy.
+                By creating an account, you agree to the HyperLocal terms
+                and privacy policy.
               </p>
-
             </div>
-
-            {/* Submit */}
 
             <button
               type="submit"
               className="modern-create-button"
               disabled={loading}
             >
-
-              {loading ? (
-                <>
-                  <span className="button-spinner"></span>
-                  Creating Account...
-                </>
-              ) : (
-                <>
-                  {isAdmin
-                    ? "Create Admin Account"
-                    : "Create Customer Account"}
-
-                  <span>
-                    →
-                  </span>
-                </>
-              )}
-
+              {loading ? "Creating Account..." : "Create Admin Account"}
+              <span>→</span>
             </button>
-
           </form>
 
-          {/* Login */}
-
           <div className="registration-login-link">
-
-            <span>
-              Already have an account?
-            </span>
-
+            <span>Already have an account?</span>
             <button
               type="button"
-              onClick={() =>
-                navigate("/")
-              }
+              onClick={() => navigate("/")}
               disabled={loading}
             >
               Back to Login
             </button>
-
           </div>
-
         </section>
-
       </main>
 
-      {/* Footer */}
-
       <footer className="modern-registration-footer">
-
-        <span>
-          © 2026 HyperLocal Services Marketplace
-        </span>
-
-        <span>
-          Secure • Local • Trusted
-        </span>
-
+        <span>© 2026 HyperLocal Services Marketplace</span>
+        <span>Secure • Local • Trusted</span>
       </footer>
-
     </div>
   );
 }
-
 
 /* =========================================================
    APP ROUTES
 ========================================================= */
 
 function App() {
-
   return (
-
     <BrowserRouter>
-
       <Routes>
+        <Route path="/" element={<LoginPage />} />
 
+        {/* Customer registration with email OTP */}
         <Route
-          path="/"
-          element={<LoginPage />}
+          path="/customer-register"
+          element={<CustomerRegistration />}
         />
 
-        <Route
-          path="/register"
-          element={<RegistrationPage />}
-        />
+        {/* Admin registration; old customer links redirect above */}
+        <Route path="/register" element={<RegistrationPage />} />
 
-        <Route
-          path="/dashboard"
-          element={<CustomerDashboard />}
-        />
+        {/* Customer dashboards */}
+        <Route path="/dashboard" element={<CustomerDashboard />} />
+        <Route path="/customer-dashboard" element={<CustomerDashboard />} />
 
-        <Route
-          path="/provider-job-role"
-          element={<ProviderJobRole />}
-        />
-
+        {/* Provider pages */}
+        <Route path="/provider-job-role" element={<ProviderJobRole />} />
         <Route
           path="/provider-dashboard"
-          element={
-            <ProviderDashboard />
-          }
+          element={<ProviderDashboard />}
         />
-
         <Route
           path="/provider-register"
-          element={
-            <ProviderRegistration />
-          }
+          element={<ProviderRegistration />}
         />
 
+        {/* Other pages */}
         <Route
           path="/recommendations"
-          element={
-            <WorkerRecommendations />
-          }
+          element={<WorkerRecommendations />}
         />
-
-        <Route
-          path="/booking"
-          element={<BookingPage />}
-        />
-
-        <Route
-          path="/admin-dashboard"
-          element={
-            <AdminDashboard />
-          }
-        />
-
+        <Route path="/booking" element={<BookingPage />} />
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
       </Routes>
-
     </BrowserRouter>
-
   );
 }
 

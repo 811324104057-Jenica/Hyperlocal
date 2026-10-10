@@ -6,6 +6,7 @@ function ProviderDashboard() {
     const [bookings, setBookings] = useState([]);
     const [customerDetails, setCustomerDetails] = useState({});
     const [serviceDetails, setServiceDetails] = useState({});
+    const [providerService, setProviderService] = useState("");
     const [loading, setLoading] = useState(true);
 
     const user = JSON.parse(
@@ -14,82 +15,201 @@ function ProviderDashboard() {
 
     const workerId = user?.workerId || user?.id;
 
-    useEffect(() => {
-        if (workerId) {
-            fetchBookings();
-        } else {
-            setLoading(false);
+    /*
+    =========================================================
+    FETCH PROVIDER'S REGISTERED SERVICE
+    =========================================================
+    */
+
+    const fetchProviderService = async () => {
+        if (!workerId) {
+            return;
         }
-    }, [workerId]);
+
+        try {
+            const response = await axios.get(
+                `http://localhost:8080/api/workers/${workerId}`
+            );
+
+            const worker = response.data;
+
+            if (
+                worker?.service &&
+                worker.service.trim() &&
+                worker.service.trim().toLowerCase() !== "pending"
+            ) {
+                setProviderService(worker.service.trim());
+            } else {
+                setProviderService("Service Provider");
+            }
+
+        } catch (error) {
+            console.error(
+                "Error fetching provider service:",
+                error
+            );
+
+            setProviderService("Service Provider");
+        }
+    };
+
+    /*
+    =========================================================
+    FETCH BOOKINGS
+    =========================================================
+    */
 
     const fetchBookings = async () => {
+        if (!workerId) {
+            setBookings([]);
+            setLoading(false);
+            return;
+        }
+
         try {
             const response = await axios.get(
                 `http://localhost:8080/api/bookings/worker/${workerId}`
             );
 
-            const bookingData = response.data;
+            const bookingData = response.data || [];
 
             setBookings(bookingData);
+
+            /*
+            -------------------------
+            CUSTOMER IDs
+            -------------------------
+            */
 
             const customerIds = [
                 ...new Set(
                     bookingData
-                        .map((booking) => booking.customerId)
+                        .map(
+                            (booking) =>
+                                booking.customerId
+                        )
                         .filter((id) => id)
                 ),
             ];
+
+            /*
+            -------------------------
+            SERVICE IDs
+            -------------------------
+            */
 
             const serviceIds = [
                 ...new Set(
                     bookingData
-                        .map((booking) => booking.serviceId)
+                        .map(
+                            (booking) =>
+                                booking.serviceId
+                        )
                         .filter((id) => id)
                 ),
             ];
 
-            const customerResponses = await Promise.all(
-                customerIds.map((customerId) =>
-                    axios.get(
-                        `http://localhost:8080/api/bookings/customer-details/${customerId}`
-                    )
-                )
-            );
+            /*
+            -------------------------
+            CUSTOMER DETAILS
+            -------------------------
+            */
 
-            const serviceResponses = await Promise.all(
-                serviceIds.map((serviceId) =>
-                    axios.get(
-                        `http://localhost:8080/api/services/${serviceId}`
+            const customerResponses =
+                await Promise.all(
+                    customerIds.map((customerId) =>
+                        axios.get(
+                            `http://localhost:8080/api/bookings/customer-details/${customerId}`
+                        )
                     )
-                )
-            );
+                );
 
             const customerMap = {};
 
-            customerResponses.forEach((response) => {
-                const customer = response.data;
-                customerMap[customer.id] = customer;
-            });
+            customerResponses.forEach(
+                (response) => {
+                    const customer =
+                        response.data;
+
+                    if (customer?.id) {
+                        customerMap[
+                            customer.id
+                        ] = customer;
+                    }
+                }
+            );
+
+            setCustomerDetails(
+                customerMap
+            );
+
+            /*
+            -------------------------
+            SERVICE DETAILS
+            -------------------------
+            */
+
+            const serviceResponses =
+                await Promise.all(
+                    serviceIds.map((serviceId) =>
+                        axios.get(
+                            `http://localhost:8080/api/services/${serviceId}`
+                        )
+                    )
+                );
 
             const serviceMap = {};
 
-            serviceResponses.forEach((response) => {
-                const service = response.data;
-                serviceMap[service.id] = service;
-            });
+            serviceResponses.forEach(
+                (response) => {
+                    const service =
+                        response.data;
 
-            setCustomerDetails(customerMap);
-            setServiceDetails(serviceMap);
+                    if (service?.id) {
+                        serviceMap[
+                            service.id
+                        ] = service;
+                    }
+                }
+            );
+
+            setServiceDetails(
+                serviceMap
+            );
 
         } catch (error) {
             console.error(
                 "Error fetching bookings:",
                 error
             );
+
+            setBookings([]);
         } finally {
             setLoading(false);
         }
     };
+
+    /*
+    =========================================================
+    INITIAL LOAD
+    =========================================================
+    */
+
+    useEffect(() => {
+        if (!workerId) {
+            setLoading(false);
+            return;
+        }
+
+        fetchProviderService();
+        fetchBookings();
+    }, [workerId]);
+
+    /*
+    =========================================================
+    UPDATE BOOKING STATUS
+    =========================================================
+    */
 
     const updateBookingStatus = async (
         bookingId,
@@ -106,6 +226,10 @@ function ProviderDashboard() {
             console.error(
                 "Error updating booking:",
                 error
+            );
+
+            alert(
+                "Unable to update booking. Please try again."
             );
         }
     };
@@ -124,90 +248,354 @@ function ProviderDashboard() {
         );
     };
 
+    /*
+    =========================================================
+    LOGOUT
+    =========================================================
+    */
+
     const logout = () => {
         localStorage.removeItem("user");
         localStorage.removeItem("role");
+
         window.location.href = "/";
     };
+
+    /*
+    =========================================================
+    STATISTICS
+    =========================================================
+    */
+
+    const totalBookings =
+        bookings.length;
+
+    const pendingBookings =
+        bookings.filter(
+            (booking) =>
+                booking.status?.toUpperCase() ===
+                "PENDING"
+        ).length;
+
+    const acceptedBookings =
+        bookings.filter(
+            (booking) =>
+                booking.status?.toUpperCase() ===
+                "ACCEPTED"
+        ).length;
+
+    const completedBookings =
+        bookings.filter(
+            (booking) =>
+                booking.status?.toUpperCase() ===
+                "COMPLETED"
+        ).length;
+
+    /*
+    =========================================================
+    LOADING SCREEN
+    =========================================================
+    */
 
     if (loading) {
         return (
             <div className="provider-dashboard">
-                <div className="no-bookings">
-                    <h3>
-                        Loading bookings...
-                    </h3>
+                <div className="loading-screen">
+                    <div className="loading-card">
+
+                        <div className="loading-spinner"></div>
+
+                        <h3>
+                            Loading dashboard...
+                        </h3>
+
+                        <p>
+                            Fetching your bookings and service details.
+                        </p>
+
+                    </div>
                 </div>
             </div>
         );
     }
 
+    /*
+    =========================================================
+    MAIN DASHBOARD
+    =========================================================
+    */
+
     return (
         <div className="provider-dashboard">
 
+            {/* =================================================
+                HEADER
+            ================================================= */}
+
             <header className="provider-header">
 
-                <div>
+                <div className="brand-section">
 
-                    <h1>
-                        Provider Dashboard
-                    </h1>
+                    <div className="brand-logo">
+                        H
+                    </div>
 
-                    <p>
-                        Manage your service bookings
-                    </p>
+                    <div>
+                        <h1>
+                            Provider Dashboard
+                        </h1>
+
+                        <p>
+                            Manage your services and bookings
+                        </p>
+                    </div>
 
                 </div>
 
-                <button onClick={logout}>
+                <button
+                    className="logout-btn"
+                    onClick={logout}
+                >
+                    <span>↪</span>
                     Logout
                 </button>
 
             </header>
 
+
+            {/* =================================================
+                MAIN CONTENT
+            ================================================= */}
+
             <main className="provider-content">
 
-                <div className="welcome-section">
 
-                    <h2>
-                        Welcome{" "}
-                        {user?.name || "Service Provider"} 👋
-                    </h2>
+                {/* =================================================
+                    WELCOME BANNER
+                ================================================= */}
 
-                    <p>
-                        <strong>Role:</strong>{" "}
-                        Service Provider
-                    </p>
+                <section className="welcome-banner">
 
-                    <p>
-                        Review and manage customer
-                        booking requests.
-                    </p>
+                    <div className="welcome-left">
 
-                </div>
+                        <div className="provider-avatar">
+                            {user?.name
+                                ? user.name
+                                      .charAt(0)
+                                      .toUpperCase()
+                                : "P"}
+                        </div>
 
-                <div className="booking-section">
+                        <div>
 
-                    <h2>
-                        Booking Requests
-                    </h2>
+                            <p className="welcome-small">
+                                Welcome back
+                            </p>
+
+                            <h2>
+                                {user?.name ||
+                                    "Service Provider"}{" "}
+                                👋
+                            </h2>
+
+                            <p className="welcome-description">
+                                Here’s what’s happening with your
+                                service bookings today.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    {/* =================================================
+                        REGISTERED SERVICE
+                    ================================================= */}
+
+                    <div className="provider-role">
+
+                        <span className="role-icon">
+                            🛠️
+                        </span>
+
+                        <div>
+
+                            <span>
+                                Registered Service
+                            </span>
+
+                            <strong>
+                                {providerService ||
+                                    "Loading..."}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                {/* =================================================
+                    STATISTICS
+                ================================================= */}
+
+                <section className="stats-grid">
+
+
+                    {/* TOTAL BOOKINGS */}
+
+                    <div className="stat-card">
+
+                        <div className="stat-icon purple">
+                            📋
+                        </div>
+
+                        <div>
+
+                            <span>
+                                Total Bookings
+                            </span>
+
+                            <strong>
+                                {totalBookings}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    {/* PENDING */}
+
+                    <div className="stat-card">
+
+                        <div className="stat-icon orange">
+                            ⏳
+                        </div>
+
+                        <div>
+
+                            <span>
+                                Pending Requests
+                            </span>
+
+                            <strong>
+                                {pendingBookings}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    {/* ACCEPTED */}
+
+                    <div className="stat-card">
+
+                        <div className="stat-icon green">
+                            ✓
+                        </div>
+
+                        <div>
+
+                            <span>
+                                Accepted
+                            </span>
+
+                            <strong>
+                                {acceptedBookings}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    {/* COMPLETED */}
+
+                    <div className="stat-card">
+
+                        <div className="stat-icon blue">
+                            ⭐
+                        </div>
+
+                        <div>
+
+                            <span>
+                                Completed
+                            </span>
+
+                            <strong>
+                                {completedBookings}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                {/* =================================================
+                    BOOKING SECTION
+                ================================================= */}
+
+                <section className="booking-section">
+
+
+                    <div className="section-header">
+
+                        <div>
+
+                            <h2>
+                                Booking Requests
+                            </h2>
+
+                            <p>
+                                Review and manage customer requests
+                            </p>
+
+                        </div>
+
+
+                        {pendingBookings > 0 && (
+                            <span className="request-count">
+                                {pendingBookings} Pending
+                            </span>
+                        )}
+
+                    </div>
+
+
+                    {/* =================================================
+                        NO BOOKINGS
+                    ================================================= */}
 
                     {bookings.length === 0 ? (
 
-                        <div className="no-bookings">
+                        <div className="empty-state">
+
+                            <div className="empty-icon">
+                                🗓️
+                            </div>
 
                             <h3>
                                 No bookings yet
                             </h3>
 
                             <p>
-                                New customer booking
-                                requests will appear here.
+                                New customer booking requests
+                                will appear here.
                             </p>
 
                         </div>
 
                     ) : (
+
+                        /* =================================================
+                           BOOKING LIST
+                        ================================================= */
 
                         <div className="booking-list">
 
@@ -224,6 +612,10 @@ function ProviderDashboard() {
                                             booking.serviceId
                                         ];
 
+                                    const status =
+                                        booking.status
+                                            ?.toUpperCase();
+
                                     return (
 
                                         <div
@@ -231,85 +623,200 @@ function ProviderDashboard() {
                                             key={booking.id}
                                         >
 
-                                            <div className="booking-info">
 
-                                                <h3>
-                                                    Booking #
-                                                    {booking.id}
-                                                </h3>
+                                            {/* =================================================
+                                                BOOKING TOP
+                                            ================================================= */}
 
-                                                <p>
-                                                    <strong>
-                                                        Customer:
-                                                    </strong>{" "}
-                                                    {customer
-                                                        ? customer.name
-                                                        : "Loading customer..."}
-                                                </p>
+                                            <div className="booking-top">
 
-                                                {customer && (
-                                                    <p>
-                                                        <strong>
-                                                            Email:
-                                                        </strong>{" "}
-                                                        {customer.email}
-                                                    </p>
-                                                )}
+                                                <div className="booking-number">
 
-                                                <p>
-                                                    <strong>
-                                                        Service:
-                                                    </strong>{" "}
-                                                    {service
-                                                        ? service.name
-                                                        : "Loading service..."}
-                                                </p>
-
-                                                <p>
-                                                    <strong>
-                                                        Date:
-                                                    </strong>{" "}
-                                                    {booking.bookingDate}
-                                                </p>
-
-                                                <p>
-                                                    <strong>
-                                                        Time:
-                                                    </strong>{" "}
-                                                    {booking.bookingTime}
-                                                </p>
-
-                                                <p>
-                                                    <strong>
-                                                        Address:
-                                                    </strong>{" "}
-                                                    {booking.address}
-                                                </p>
-
-                                                <p>
-                                                    <strong>
-                                                        Price:
-                                                    </strong>{" "}
-                                                    ₹
-                                                    {booking.totalPrice}
-                                                </p>
-
-                                                <p>
-                                                    <strong>
-                                                        Status:
-                                                    </strong>{" "}
-
-                                                    <span
-                                                        className={`status ${booking.status?.toLowerCase()}`}
-                                                    >
-                                                        {booking.status}
+                                                    <span>
+                                                        BOOKING
                                                     </span>
 
-                                                </p>
+                                                    <strong>
+                                                        #{booking.id}
+                                                    </strong>
+
+                                                </div>
+
+
+                                                <span
+                                                    className={`status ${
+                                                        status?.toLowerCase() ||
+                                                        "pending"
+                                                    }`}
+                                                >
+                                                    {status ||
+                                                        "PENDING"}
+                                                </span>
 
                                             </div>
 
-                                            {booking.status ===
+
+                                            {/* =================================================
+                                                BOOKING MAIN DETAILS
+                                            ================================================= */}
+
+                                            <div className="booking-main">
+
+
+                                                {/* CUSTOMER */}
+
+                                                <div className="customer-section">
+
+                                                    <div className="customer-avatar">
+
+                                                        {customer?.name
+                                                            ? customer.name
+                                                                  .charAt(0)
+                                                                  .toUpperCase()
+                                                            : "C"}
+
+                                                    </div>
+
+                                                    <div>
+
+                                                        <span className="field-label">
+                                                            Customer
+                                                        </span>
+
+                                                        <h3>
+                                                            {customer
+                                                                ? customer.name
+                                                                : "Loading customer..."}
+                                                        </h3>
+
+                                                        <p>
+                                                            {customer?.email ||
+                                                                "Customer details"}
+                                                        </p>
+
+                                                    </div>
+
+                                                </div>
+
+
+                                                {/* SERVICE */}
+
+                                                <div className="booking-detail">
+
+                                                    <div className="detail-icon">
+                                                        🛠️
+                                                    </div>
+
+                                                    <div>
+
+                                                        <span className="field-label">
+                                                            Service
+                                                        </span>
+
+                                                        <strong>
+                                                            {service?.name ||
+                                                                providerService ||
+                                                                "Service"}
+                                                        </strong>
+
+                                                    </div>
+
+                                                </div>
+
+
+                                                {/* DATE */}
+
+                                                <div className="booking-detail">
+
+                                                    <div className="detail-icon">
+                                                        📅
+                                                    </div>
+
+                                                    <div>
+
+                                                        <span className="field-label">
+                                                            Date
+                                                        </span>
+
+                                                        <strong>
+                                                            {booking.bookingDate ||
+                                                                "Not specified"}
+                                                        </strong>
+
+                                                    </div>
+
+                                                </div>
+
+
+                                                {/* TIME */}
+
+                                                <div className="booking-detail">
+
+                                                    <div className="detail-icon">
+                                                        🕐
+                                                    </div>
+
+                                                    <div>
+
+                                                        <span className="field-label">
+                                                            Time
+                                                        </span>
+
+                                                        <strong>
+                                                            {booking.bookingTime ||
+                                                                "Not specified"}
+                                                        </strong>
+
+                                                    </div>
+
+                                                </div>
+
+
+                                                {/* PRICE */}
+
+                                                <div className="booking-price">
+
+                                                    <span>
+                                                        Total Price
+                                                    </span>
+
+                                                    <strong>
+                                                        ₹
+                                                        {booking.totalPrice ??
+                                                            0}
+                                                    </strong>
+
+                                                </div>
+
+                                            </div>
+
+
+                                            {/* =================================================
+                                                ADDRESS
+                                            ================================================= */}
+
+                                            {booking.address && (
+
+                                                <div className="address-row">
+
+                                                    <span>
+                                                        📍
+                                                    </span>
+
+                                                    <p>
+                                                        {booking.address}
+                                                    </p>
+
+                                                </div>
+
+                                            )}
+
+
+                                            {/* =================================================
+                                                ACTIONS
+                                            ================================================= */}
+
+                                            {status ===
                                                 "PENDING" && (
 
                                                 <div className="booking-actions">
@@ -322,7 +829,7 @@ function ProviderDashboard() {
                                                             )
                                                         }
                                                     >
-                                                        Accept
+                                                        ✓ Accept Booking
                                                     </button>
 
                                                     <button
@@ -333,7 +840,7 @@ function ProviderDashboard() {
                                                             )
                                                         }
                                                     >
-                                                        Reject
+                                                        ✕ Reject
                                                     </button>
 
                                                 </div>
@@ -343,6 +850,7 @@ function ProviderDashboard() {
                                         </div>
 
                                     );
+
                                 }
                             )}
 
@@ -350,7 +858,7 @@ function ProviderDashboard() {
 
                     )}
 
-                </div>
+                </section>
 
             </main>
 

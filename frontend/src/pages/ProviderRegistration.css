@@ -1,57 +1,191 @@
-.location-info-box {
+/* =========================================================
+   HYPERLOCAL PROVIDER REGISTRATION
+   ========================================================= */
+
+.provider-location-box {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
-    margin-top: 18px;
-    padding: 15px;
-    border: 1px solid #c7d2fe;
-    border-radius: 12px;
+    gap: 10px;
+
+    padding: 12px 13px;
+
+    border-radius: 11px;
+
     background: #eef2ff;
-    text-align: left;
+
+    border: 1px solid #c7d2fe;
+
+    margin-top: -2px;
 }
 
-.location-info-icon {
-    font-size: 24px;
+.provider-location-icon {
+    width: 28px;
+    height: 28px;
+
     flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    font-size: 15px;
+
+    box-shadow:
+        0 3px 8px rgba(79, 70, 229, 0.08);
 }
 
-.location-info-box strong {
+.provider-location-box strong {
     display: block;
-    margin-bottom: 4px;
+
+    margin-bottom: 3px;
+
     color: #3730a3;
-    font-size: 14px;
+
+    font-size: 11px;
+    font-weight: 800;
 }
 
-.location-info-box p {
+.provider-location-box p {
     margin: 0;
-    color: #4b5563;
-    font-size: 13px;
+
+    color: #5b6475;
+
+    font-size: 10px;
+
     line-height: 1.5;
 }
 
-.location-status {
-    margin-top: 12px;
-    padding: 11px 14px;
-    border-radius: 9px;
+
+/* =========================================================
+   LOCATION STATUS
+   ========================================================= */
+
+.provider-location-status {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 10px 12px;
+
+    margin-bottom: 17px;
+
+    border-radius: 10px;
+
     background: #f0fdf4;
+
+    border: 1px solid #bbf7d0;
+
     color: #166534;
-    font-size: 13px;
+
+    font-size: 11px;
     font-weight: 600;
 }
 
-.location-error {
-    margin-top: 12px;
-    padding: 11px 14px;
-    border-radius: 9px;
-    background: #fef2f2;
-    color: #b91c1c;
-    border: 1px solid #fecaca;
-    font-size: 13px;
-    font-weight: 600;
+.provider-location-status-icon {
+    font-size: 14px;
 }
 
-@media (max-width: 600px) {
-    .location-info-box {
+
+/* =========================================================
+   PROVIDER REGISTRATION ERROR
+   ========================================================= */
+
+.provider-registration-error {
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+
+    padding: 12px 14px;
+
+    margin-bottom: 18px;
+
+    border-radius: 10px;
+
+    background: #fff1f2;
+
+    border: 1px solid #fecdd3;
+
+    color: #be123c;
+
+    font-size: 12px;
+
+    line-height: 1.4;
+}
+
+
+/* =========================================================
+   PROVIDER-SPECIFIC CARD ICON
+   ========================================================= */
+
+.registration-card-icon {
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.registration-card-icon:hover {
+    transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   BUTTON
+   ========================================================= */
+
+.modern-create-button {
+    min-height: 50px;
+}
+
+.modern-create-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    .provider-location-box {
         text-align: left;
     }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .provider-location-box {
+        padding: 11px 12px;
+    }
+
+    .provider-location-box strong {
+        font-size: 11px;
+    }
+
+    .provider-location-box p {
+        font-size: 10px;
+    }
+
+}
+
+
+@media (max-width: 400px) {
+
+    .provider-location-box {
+        gap: 8px;
+    }
+
+    .provider-location-icon {
+        width: 26px;
+        height: 26px;
+    }
+
 }

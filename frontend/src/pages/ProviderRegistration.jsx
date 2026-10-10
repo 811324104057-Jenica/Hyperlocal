@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import EmailOtpVerification from "../components/EmailOtpVerification";
 import "./ProviderRegistration.css";
 
 function ProviderRegistration() {
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         name: "",
@@ -10,63 +13,59 @@ function ProviderRegistration() {
         password: ""
     });
 
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [locationStatus, setLocationStatus] = useState("");
+    const [emailVerified, setEmailVerified] = useState(false);
 
     const handleChange = (e) => {
+        const { name, value } = e.target;
+
         setFormData({
             ...formData,
-            [e.target.name]: e.target.value
+            [name]: value
         });
+
+        setError("");
+
+        if (name === "email") {
+            setEmailVerified(false);
+        }
     };
 
     const getProviderLocation = () => {
-
         return new Promise((resolve, reject) => {
-
             if (!navigator.geolocation) {
-
                 reject(
                     new Error(
                         "Location services are not supported by this browser."
                     )
                 );
-
                 return;
             }
 
             navigator.geolocation.getCurrentPosition(
-
                 (position) => {
-
                     resolve({
                         latitude: position.coords.latitude,
                         longitude: position.coords.longitude
                     });
-
                 },
 
-                (error) => {
-
+                (locationError) => {
                     let message =
                         "Unable to access your location.";
 
-                    if (error.code === 1) {
-
+                    if (locationError.code === 1) {
                         message =
                             "Location permission was denied. Please allow location access for HyperLocal.";
-
-                    } else if (error.code === 2) {
-
+                    } else if (locationError.code === 2) {
                         message =
                             "Your location is currently unavailable. Please turn on your device location and try again.";
-
-                    } else if (error.code === 3) {
-
+                    } else if (locationError.code === 3) {
                         message =
                             "Location request timed out. Please try again.";
-
                     }
 
                     reject(new Error(message));
@@ -82,7 +81,6 @@ function ProviderRegistration() {
     };
 
     const handleSubmit = async (e) => {
-
         e.preventDefault();
 
         setError("");
@@ -93,71 +91,48 @@ function ProviderRegistration() {
             !formData.email.trim() ||
             !formData.password
         ) {
-
-            setError(
-                "Please fill in all required fields."
-            );
-
+            setError("Please fill in all required fields.");
             return;
         }
 
         if (formData.password.length < 6) {
-
             setError(
                 "Password must contain at least 6 characters."
             );
+            return;
+        }
 
+        if (!emailVerified) {
+            setError(
+                "Please verify your email address with OTP before creating your provider account."
+            );
             return;
         }
 
         try {
-
             setLoading(true);
 
             setLocationStatus(
                 "📍 Getting your current location..."
             );
 
-            const location =
-                await getProviderLocation();
+            const location = await getProviderLocation();
 
             setLocationStatus(
                 "✓ Location detected successfully."
             );
 
-            /*
-             * Service, price and experience are intentionally
-             * not collected on this registration page.
-             *
-             * The provider will complete the job-role details
-             * in the next step.
-             *
-             * The temporary values below allow the existing
-             * backend registration API to create the provider
-             * account and worker record.
-             */
-
             const response = await axios.post(
-
                 "http://localhost:8080/api/auth/register-provider",
-
                 {
                     name: formData.name.trim(),
-
                     email: formData.email.trim(),
-
                     password: formData.password,
-
                     service: "Pending",
-
                     price: 1,
-
                     experience: 0,
-
                     completedJobs: 0,
-
                     latitude: location.latitude,
-
                     longitude: location.longitude
                 }
             );
@@ -176,11 +151,9 @@ function ProviderRegistration() {
                 "Provider registration successful!"
             );
 
-            window.location.href =
-                "/provider-job-role";
+            navigate("/provider-job-role");
 
         } catch (err) {
-
             console.error(
                 "Provider registration error:",
                 err
@@ -189,13 +162,16 @@ function ProviderRegistration() {
             setLocationStatus("");
 
             if (err.response?.data?.message) {
-
                 setError(
                     err.response.data.message
                 );
-
+            } else if (err.response?.data) {
+                setError(
+                    typeof err.response.data === "string"
+                        ? err.response.data
+                        : "Unable to register. Please try again."
+                );
             } else {
-
                 setError(
                     err.message ||
                     "Unable to register. Please try again."
@@ -203,148 +179,380 @@ function ProviderRegistration() {
             }
 
         } finally {
-
             setLoading(false);
         }
     };
 
     return (
+        <div className="registration-modern-page">
 
-        <div className="provider-registration-page">
+            <div className="registration-glow glow-one"></div>
+            <div className="registration-glow glow-two"></div>
 
-            <div className="provider-registration-card">
+            <div className="registration-topbar">
 
-                <div className="registration-logo">
-                    H
+                <button
+                    type="button"
+                    className="registration-brand"
+                    onClick={() => navigate("/")}
+                    disabled={loading}
+                >
+                    <span className="registration-brand-logo">
+                        H
+                    </span>
+
+                    <span>
+                        HyperLocal
+                    </span>
+                </button>
+
+                <div className="registration-secure">
+                    🔒 Secure Registration
                 </div>
 
-                <h1>
-                    Become a Service Provider
-                </h1>
+            </div>
 
-                <p className="registration-subtitle">
-                    Join HyperLocal and connect with
-                    customers near you.
-                </p>
+            <main className="registration-modern-container">
 
-                {error && (
-                    <div className="registration-error">
-                        ⚠️ {error}
-                    </div>
-                )}
+                <section className="registration-info">
 
-                {locationStatus && (
-                    <div className="location-status">
-                        {locationStatus}
-                    </div>
-                )}
-
-                <form
-                    onSubmit={handleSubmit}
-                    className="registration-form"
-                >
-
-                    <div className="input-group">
-
-                        <label>
-                            Full Name
-                        </label>
-
-                        <input
-                            type="text"
-                            name="name"
-                            placeholder="Enter your full name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            disabled={loading}
-                        />
-
+                    <div className="registration-small-badge">
+                        🛠️ JOIN HYPERLOCAL
                     </div>
 
-                    <div className="input-group">
+                    <h1>
+                        Grow your local business,
+                        <span>
+                            made simple.
+                        </span>
+                    </h1>
 
-                        <label>
-                            Email Address
-                        </label>
+                    <p>
+                        Create your HyperLocal provider
+                        account and connect with customers
+                        looking for trusted local services
+                        near them.
+                    </p>
 
-                        <input
-                            type="email"
-                            name="email"
-                            placeholder="you@example.com"
-                            value={formData.email}
-                            onChange={handleChange}
-                            disabled={loading}
-                        />
+                    <div className="registration-benefits">
+
+                        <div className="registration-benefit">
+
+                            <div className="benefit-icon">
+                                📍
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Reach Nearby Customers
+                                </strong>
+
+                                <span>
+                                    Connect with customers around your location.
+                                </span>
+                            </div>
+
+                        </div>
+
+                        <div className="registration-benefit">
+
+                            <div className="benefit-icon">
+                                ⚡
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Manage Your Services
+                                </strong>
+
+                                <span>
+                                    Choose your service and set your pricing.
+                                </span>
+                            </div>
+
+                        </div>
+
+                        <div className="registration-benefit">
+
+                            <div className="benefit-icon">
+                                ⭐
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Build Your Reputation
+                                </strong>
+
+                                <span>
+                                    Receive genuine ratings and customer reviews.
+                                </span>
+                            </div>
+
+                        </div>
 
                     </div>
 
-                    <div className="input-group">
+                </section>
 
-                        <label>
-                            Password
-                        </label>
+                <section className="registration-modern-card">
 
-                        <input
-                            type="password"
-                            name="password"
-                            placeholder="Create a secure password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            disabled={loading}
-                        />
+                    <div className="registration-card-header">
 
-                        <small>
-                            Password must contain at least 6 characters.
-                        </small>
-
-                    </div>
-
-                    <div className="location-info-box">
-
-                        <div className="location-info-icon">
-                            📍
+                        <div className="registration-card-icon">
+                            🛠️
                         </div>
 
                         <div>
 
-                            <strong>
-                                Location access required
-                            </strong>
+                            <h2>
+                                Create Provider Account
+                            </h2>
 
                             <p>
-                                HyperLocal uses your current
-                                location to connect you with
-                                nearby customers.
+                                Join HyperLocal and start offering
+                                your services.
                             </p>
 
                         </div>
 
                     </div>
 
-                    <button
-                        type="submit"
-                        className="register-provider-btn"
-                        disabled={loading}
+                    {error && (
+                        <div className="modern-registration-error">
+
+                            <span>
+                                ⚠️
+                            </span>
+
+                            <span>
+                                {error}
+                            </span>
+
+                        </div>
+                    )}
+
+                    {locationStatus && (
+                        <div className="provider-location-status">
+
+                            <span className="provider-location-status-icon">
+                                📍
+                            </span>
+
+                            <span>
+                                {locationStatus}
+                            </span>
+
+                        </div>
+                    )}
+
+                    <form
+                        onSubmit={handleSubmit}
+                        className="modern-registration-form"
                     >
-                        {loading
-                            ? "Creating Account..."
-                            : "Register as Provider →"}
-                    </button>
 
-                </form>
+                        <div className="modern-field">
 
-                <button
-                    type="button"
-                    className="back-login-button"
-                    onClick={() =>
-                        window.location.href = "/"
-                    }
-                    disabled={loading}
-                >
-                    ← Back to Login
-                </button>
+                            <label>
+                                Full Name
+                            </label>
 
-            </div>
+                            <div className="modern-input">
+
+                                <span>
+                                    👤
+                                </span>
+
+                                <input
+                                    type="text"
+                                    name="name"
+                                    placeholder="Enter your full name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                />
+
+                            </div>
+
+                        </div>
+
+                        <div className="modern-field">
+
+                            <label>
+                                Email Address
+                            </label>
+
+                            <div className="modern-input">
+
+                                <span>
+                                    ✉
+                                </span>
+
+                                <input
+                                    type="email"
+                                    name="email"
+                                    placeholder="you@example.com"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                />
+
+                            </div>
+
+                        </div>
+
+                        <EmailOtpVerification
+                            email={formData.email}
+                            onVerified={setEmailVerified}
+                        />
+
+                        <div className="modern-field">
+
+                            <label>
+                                Password
+                            </label>
+
+                            <div className="modern-input">
+
+                                <span>
+                                    🔒
+                                </span>
+
+                                <input
+                                    type={
+                                        showPassword
+                                            ? "text"
+                                            : "password"
+                                    }
+                                    name="password"
+                                    placeholder="Create a secure password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    disabled={loading}
+                                />
+
+                                <button
+                                    type="button"
+                                    className="modern-password-toggle"
+                                    onClick={() =>
+                                        setShowPassword(
+                                            !showPassword
+                                        )
+                                    }
+                                    disabled={loading}
+                                >
+                                    {showPassword
+                                        ? "🙈"
+                                        : "👁"}
+                                </button>
+
+                            </div>
+
+                            <small>
+                                Password must contain at least 6 characters.
+                            </small>
+
+                        </div>
+
+                        <div className="provider-location-box">
+
+                            <div className="provider-location-icon">
+                                📍
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    Location access required
+                                </strong>
+
+                                <p>
+                                    HyperLocal uses your current
+                                    location to connect you with
+                                    nearby customers.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <div className="registration-terms">
+
+                            <span className="terms-check">
+                                ✓
+                            </span>
+
+                            <p>
+                                By creating an account, you agree to
+                                the HyperLocal terms and privacy policy.
+                            </p>
+
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="modern-create-button"
+                            disabled={
+                                loading ||
+                                !emailVerified
+                            }
+                        >
+
+                            {loading ? (
+                                <>
+                                    <span className="button-spinner"></span>
+                                    Creating Account...
+                                </>
+                            ) : !emailVerified ? (
+                                <>
+                                    Verify Email to Continue
+                                    <span>
+                                        🔐
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    Create Provider Account
+                                    <span>
+                                        →
+                                    </span>
+                                </>
+                            )}
+
+                        </button>
+
+                    </form>
+
+                    <div className="registration-login-link">
+
+                        <span>
+                            Already have an account?
+                        </span>
+
+                        <button
+                            type="button"
+                            onClick={() => navigate("/")}
+                            disabled={loading}
+                        >
+                            Back to Login
+                        </button>
+
+                    </div>
+
+                </section>
+
+            </main>
+
+            <footer className="modern-registration-footer">
+
+                <span>
+                    © 2026 HyperLocal Services Marketplace
+                </span>
+
+                <span>
+                    Secure • Local • Trusted
+                </span>
+
+            </footer>
 
         </div>
     );
