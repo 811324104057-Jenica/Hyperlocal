@@ -14,8 +14,8 @@ public class WorkerService {
     private final WorkerRepository workerRepository;
 
     // Distance pricing rule
-    private static final double FREE_DISTANCE_KM = 5.0;
-    private static final double EXTRA_CHARGE_PER_KM = 20.0;
+    private static final double FREE_DISTANCE_KM = 0.0;
+    private static final double EXTRA_CHARGE_PER_KM = 3.0;
 
     public WorkerService(
             WorkerRepository workerRepository) {
