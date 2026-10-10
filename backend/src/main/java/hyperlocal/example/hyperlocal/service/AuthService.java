@@ -13,14 +13,19 @@ import hyperlocal.example.hyperlocal.repository.WorkerRepository;
 public class AuthService {
 
     private final UserRepository userRepository;
+
     private final WorkerRepository workerRepository;
+
+    private final OtpService otpService;
 
     public AuthService(
             UserRepository userRepository,
-            WorkerRepository workerRepository) {
+            WorkerRepository workerRepository,
+            OtpService otpService) {
 
         this.userRepository = userRepository;
         this.workerRepository = workerRepository;
+        this.otpService = otpService;
     }
 
     public User login(
@@ -28,15 +33,20 @@ public class AuthService {
             String password,
             String role) {
 
-        User user = userRepository
-                .findByEmailAndRole(email, role)
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "Invalid email or role"));
+        User user =
+                userRepository
+                        .findByEmailAndRole(email, role)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Invalid email or role"
+                                )
+                        );
 
         if (!user.getPassword().equals(password)) {
+
             throw new RuntimeException(
-                    "Invalid password");
+                    "Invalid password"
+            );
         }
 
         return user;
@@ -45,24 +55,55 @@ public class AuthService {
     public User registerCustomer(
             RegistrationRequest request) {
 
-        validateBasicRegistration(request);
+        String email =
+                request.getEmail()
+                        .trim()
+                        .toLowerCase();
 
-        if (userRepository
-                .findByEmailAndRole(
-                        request.getEmail(),
-                        "customer")
-                .isPresent()) {
+        if (!otpService.isEmailVerified(email)) {
 
             throw new RuntimeException(
-                    "A customer with this email already exists");
+                    "Please verify your email with OTP before registering."
+            );
+        }
+
+        if (userRepository.findByEmail(email).isPresent()) {
+
+            throw new RuntimeException(
+                    "An account with this email already exists."
+            );
+        }
+
+        if (request.getName() == null ||
+                request.getName().trim().isEmpty()) {
+
+            throw new RuntimeException(
+                    "Name is required."
+            );
+        }
+
+        if (request.getPassword() == null ||
+                request.getPassword().length() < 6) {
+
+            throw new RuntimeException(
+                    "Password must contain at least 6 characters."
+            );
         }
 
         User user = new User();
 
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
+        user.setName(
+                request.getName().trim()
+        );
+
+        user.setEmail(email);
+
+        user.setPassword(
+                request.getPassword()
+        );
+
         user.setRole("customer");
+
         user.setWorkerId(null);
 
         return userRepository.save(user);
@@ -71,24 +112,48 @@ public class AuthService {
     public User registerAdmin(
             RegistrationRequest request) {
 
-        validateBasicRegistration(request);
+        String email =
+                request.getEmail()
+                        .trim()
+                        .toLowerCase();
 
-        if (userRepository
-                .findByEmailAndRole(
-                        request.getEmail(),
-                        "admin")
-                .isPresent()) {
+        if (userRepository.findByEmail(email).isPresent()) {
 
             throw new RuntimeException(
-                    "An admin with this email already exists");
+                    "An account with this email already exists."
+            );
+        }
+
+        if (request.getName() == null ||
+                request.getName().trim().isEmpty()) {
+
+            throw new RuntimeException(
+                    "Name is required."
+            );
+        }
+
+        if (request.getPassword() == null ||
+                request.getPassword().length() < 6) {
+
+            throw new RuntimeException(
+                    "Password must contain at least 6 characters."
+            );
         }
 
         User user = new User();
 
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
+        user.setName(
+                request.getName().trim()
+        );
+
+        user.setEmail(email);
+
+        user.setPassword(
+                request.getPassword()
+        );
+
         user.setRole("admin");
+
         user.setWorkerId(null);
 
         return userRepository.save(user);
@@ -97,130 +162,132 @@ public class AuthService {
     public User registerProvider(
             ProviderRegistrationRequest request) {
 
-        if (request.getName() == null
-                || request.getName().trim().isEmpty()) {
+        String email =
+                request.getEmail()
+                        .trim()
+                        .toLowerCase();
+
+        if (!otpService.isEmailVerified(email)) {
 
             throw new RuntimeException(
-                    "Name is required");
+                    "Please verify your email with OTP before registering."
+            );
         }
 
-        if (request.getEmail() == null
-                || request.getEmail().trim().isEmpty()) {
+        if (userRepository.findByEmail(email).isPresent()) {
 
             throw new RuntimeException(
-                    "Email is required");
+                    "An account with this email already exists."
+            );
         }
 
-        if (request.getPassword() == null
-                || request.getPassword().trim().isEmpty()) {
+        if (request.getName() == null ||
+                request.getName().trim().isEmpty()) {
 
             throw new RuntimeException(
-                    "Password is required");
+                    "Name is required."
+            );
         }
 
-        if (request.getService() == null
-                || request.getService().trim().isEmpty()) {
+        if (request.getPassword() == null ||
+                request.getPassword().length() < 6) {
 
             throw new RuntimeException(
-                    "Service is required");
+                    "Password must contain at least 6 characters."
+            );
         }
 
-        if (request.getPrice() <= 0) {
+        if (request.getService() == null ||
+                request.getService().trim().isEmpty()) {
 
             throw new RuntimeException(
-                    "Price must be greater than zero");
+                    "Service is required."
+            );
+        }
+
+        if (request.getPrice() < 0) {
+
+            throw new RuntimeException(
+                    "Price cannot be negative."
+            );
         }
 
         if (request.getExperience() < 0) {
 
             throw new RuntimeException(
-                    "Experience cannot be negative");
+                    "Experience cannot be negative."
+            );
         }
 
-        if (request.getLatitude() < -90
-                || request.getLatitude() > 90) {
+        if (request.getLatitude() < -90 ||
+                request.getLatitude() > 90) {
 
             throw new RuntimeException(
-                    "Invalid provider latitude");
+                    "Invalid latitude."
+            );
         }
 
-        if (request.getLongitude() < -180
-                || request.getLongitude() > 180) {
+        if (request.getLongitude() < -180 ||
+                request.getLongitude() > 180) {
 
             throw new RuntimeException(
-                    "Invalid provider longitude");
-        }
-
-        if (userRepository
-                .findByEmailAndRole(
-                        request.getEmail(),
-                        "provider")
-                .isPresent()) {
-
-            throw new RuntimeException(
-                    "A provider with this email already exists");
+                    "Invalid longitude."
+            );
         }
 
         Worker worker = new Worker();
 
-        worker.setName(request.getName());
-        worker.setService(request.getService());
+        worker.setName(
+                request.getName().trim()
+        );
+
+        worker.setService(
+                request.getService().trim()
+        );
+
         worker.setRating(0);
+
         worker.setDistance(0);
-        worker.setPrice(request.getPrice());
-        worker.setExperience(request.getExperience());
+
+        worker.setPrice(
+                request.getPrice()
+        );
+
+        worker.setExperience(
+                request.getExperience()
+        );
+
         worker.setCompletedJobs(0);
-        worker.setLatitude(request.getLatitude());
-        worker.setLongitude(request.getLongitude());
+
+        worker.setLatitude(
+                request.getLatitude()
+        );
+
+        worker.setLongitude(
+                request.getLongitude()
+        );
 
         Worker savedWorker =
                 workerRepository.save(worker);
 
         User user = new User();
 
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
+        user.setName(
+                request.getName().trim()
+        );
+
+        user.setEmail(email);
+
+        user.setPassword(
+                request.getPassword()
+        );
+
         user.setRole("provider");
-        user.setWorkerId(savedWorker.getId());
+
+        user.setWorkerId(
+                savedWorker.getId()
+        );
 
         return userRepository.save(user);
-    }
-
-    private void validateBasicRegistration(
-            RegistrationRequest request) {
-
-        if (request.getName() == null
-                || request.getName().trim().isEmpty()) {
-
-            throw new RuntimeException(
-                    "Name is required");
-        }
-
-        if (request.getEmail() == null
-                || request.getEmail().trim().isEmpty()) {
-
-            throw new RuntimeException(
-                    "Email is required");
-        }
-
-        if (request.getPassword() == null
-                || request.getPassword().trim().isEmpty()) {
-
-            throw new RuntimeException(
-                    "Password is required");
-        }
-
-        if (!request.getEmail().contains("@")) {
-
-            throw new RuntimeException(
-                    "Please enter a valid email address");
-        }
-
-        if (request.getPassword().length() < 6) {
-
-            throw new RuntimeException(
-                    "Password must contain at least 6 characters");
-        }
     }
 }

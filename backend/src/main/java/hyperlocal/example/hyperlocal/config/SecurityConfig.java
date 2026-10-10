@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -25,7 +26,10 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
 
-                // Authentication and registration
+                // Allow browser preflight requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // Authentication
                 .requestMatchers(
                     "/api/auth/login",
                     "/api/auth/register-customer",
@@ -33,34 +37,26 @@ public class SecurityConfig {
                     "/api/auth/register-admin"
                 ).permitAll()
 
-                // Worker APIs
-                .requestMatchers(
-                    "/api/workers/**"
-                ).permitAll()
+                // Email OTP
+                .requestMatchers("/api/otp/**").permitAll()
 
-                // Service APIs
-                .requestMatchers(
-                    "/api/services/**"
-                ).permitAll()
+                // Workers
+                .requestMatchers("/api/workers/**").permitAll()
 
-                // Booking APIs
-                .requestMatchers(
-                    "/api/bookings/**"
-                ).permitAll()
+                // Services
+                .requestMatchers("/api/services/**").permitAll()
 
-                // Payment APIs
-                .requestMatchers(
-                    "/api/payments/**"
-                ).permitAll()
+                // Bookings
+                .requestMatchers("/api/bookings/**").permitAll()
 
-                // Admin APIs
-                .requestMatchers(
-                    "/api/admin/**"
-                ).permitAll()
+                // Payments
+                .requestMatchers("/api/payments/**").permitAll()
 
-                // Other requests
-                .anyRequest()
-                .authenticated()
+                // Admin
+                .requestMatchers("/api/admin/**").permitAll()
+
+                // Preserve the existing authorization rule
+                .anyRequest().authenticated()
             );
 
         return http.build();
@@ -69,39 +65,33 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration =
-                new CorsConfiguration();
+        CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(
-                List.of(
-                    "http://localhost:5173",
-                    "http://localhost:5174"
-                )
+        // Development only: allow localhost on any port
+        configuration.setAllowedOriginPatterns(
+            List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*"
+            )
         );
 
         configuration.setAllowedMethods(
-                List.of(
-                    "GET",
-                    "POST",
-                    "PUT",
-                    "DELETE",
-                    "OPTIONS"
-                )
+            List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "OPTIONS"
+            )
         );
 
-        configuration.setAllowedHeaders(
-                List.of("*")
-        );
-
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+            new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration(
-                "/**",
-                configuration
-        );
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }

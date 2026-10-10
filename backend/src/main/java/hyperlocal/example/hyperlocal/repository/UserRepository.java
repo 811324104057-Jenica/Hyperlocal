@@ -8,5 +8,7 @@ import hyperlocal.example.hyperlocal.model.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    Optional<User> findByEmail(String email);
+
     Optional<User> findByEmailAndRole(String email, String role);
 }
